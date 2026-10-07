@@ -1,9 +1,9 @@
 const firebaseConfig = {
-    apiKey: "chave_real_do_seu_projeto",
-    authDomain: "nome-real-do-projeto.firebaseapp.com",
-    databaseURL: "https://nome-real-do-projeto-default-rtdb.firebaseio.com",
-    projectId: "nome-real-do-projeto",
-    storageBucket: "nome-real-do-projeto.firebasestorage.app",
-    messagingSenderId: "id_real_do_sender",
-    appId: "id_real_do_app"
+    apiKey: "COLOQUE_SUA_CHAVE_REAL_AQUI",
+    authDomain: "SEU-PROJETO.firebaseapp.com",
+    databaseURL: "https://SEU-PROJETO-default-rtdb.firebaseio.com",
+    projectId: "SEU-PROJETO",
+    storageBucket: "SEU-PROJETO.firebasestorage.app",
+    messagingSenderId: "SEU_SENDER_ID",
+    appId: "SEU_APP_ID"
 };
