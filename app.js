@@ -1,4 +1,1387 @@
-let alunos=JSON.parse(localStorage.getItem("fanfarra_alunos"))||[];
+const db = firebase.database();
+
+let S = {
+    alunos: {},
+    instrumentos: {},
+    chamadas: {},
+    avisos: {},
+    eventos: {},
+    problemas: {}
+};
+
+let filtroInstrumentos = "todos";
+
+/* =========================
+   FIREBASE
+========================= */
+
+firebase.auth().signInAnonymously()
+    .catch(error => {
+        console.error("Erro no login:", error);
+        mostrarConfig();
+    });
+
+const caminhos = [
+    "alunos",
+    "instrumentos",
+    "chamadas",
+    "avisos",
+    "eventos",
+    "problemas"
+];
+
+caminhos.forEach(caminho => {
+    db.ref(caminho).on("value", snapshot => {
+        S[caminho] = snapshot.val() || {};
+
+        renderizar();
+
+        if (caminho === "problemas") {
+            atualizarBadgeProblemas();
+        }
+    });
+});
+
+
+/* =========================
+   INICIALIZAÇÃO
+========================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const data = document.getElementById("data");
+
+    if (data) {
+        const hoje = new Date();
+
+        const ano = hoje.getFullYear();
+        const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+        const dia = String(hoje.getDate()).padStart(2, "0");
+
+        data.value = `${ano}-${mes}-${dia}`;
+    }
+
+    renderizar();
+});
+
+
+/* =========================
+   RENDERIZAÇÃO GERAL
+========================= */
+
+function renderizar() {
+    renderizarAlunos();
+    renderizarInstrumentos();
+    renderizarChamada();
+    renderizarAvisos();
+    renderizarEventos();
+    renderizarProblemas();
+}
+
+
+/* =========================
+   ALUNOS
+========================= */
+
+function renderizarAlunos() {
+
+    const lista = document.getElementById("alunos");
+
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    const alunos = Object.entries(S.alunos);
+
+    if (alunos.length === 0) {
+        lista.innerHTML = `
+            <div class="alert alert-secondary">
+                Nenhum aluno cadastrado.
+            </div>
+        `;
+        return;
+    }
+
+    alunos.forEach(([id, aluno]) => {
+
+        const instrumento = S.instrumentos[aluno.instrumento];
+
+        lista.innerHTML += `
+            <div class="card mb-3">
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+
+                        <div>
+                            <h5 class="mb-1">${esc(aluno.nome)}</h5>
+
+                            <div>
+                                <strong>Turma:</strong>
+                                ${esc(aluno.turma)}
+                            </div>
+
+                            <div>
+                                <strong>Instrumento:</strong>
+                                ${
+                                    instrumento
+                                    ? `${esc(instrumento.tipo)} nº ${esc(instrumento.numero)}`
+                                    : "Sem instrumento"
+                                }
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap">
+
+                            <button
+                                class="btn btn-primary btn-sm"
+                                onclick="trocarInstrumento('${id}')">
+                                Trocar instrumento
+                            </button>
+
+                            <button
+                                class="btn btn-danger btn-sm"
+                                onclick="excluirAluno('${id}')">
+                                Excluir
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        `;
+    });
+}
+
+
+/* =========================
+   CADASTRAR ALUNO
+========================= */
+
+document.getElementById("fAluno")?.addEventListener("submit", async e => {
+
+    e.preventDefault();
+
+    const nome = document.getElementById("nome").value.trim();
+    const turma = document.getElementById("turma").value.trim();
+    const instrumentoId = document.getElementById("instAluno").value;
+
+    if (!nome || !turma) {
+        alert("Preencha nome e turma.");
+        return;
+    }
+
+    const id = novoId();
+
+    const atualizacoes = {};
+
+    atualizacoes[`alunos/${id}`] = {
+        nome,
+        turma,
+        instrumento: instrumentoId || null
+    };
+
+    if (instrumentoId) {
+        atualizacoes[`instrumentos/${instrumentoId}/alunoId`] = id;
+    }
+
+    try {
+
+        await db.ref().update(atualizacoes);
+
+        e.target.reset();
+
+        mostrarToast("Aluno cadastrado!");
+
+    } catch (erro) {
+
+        console.error(erro);
+        alert("Não foi possível cadastrar o aluno.");
+
+    }
+});
+
+
+/* =========================
+   EXCLUIR ALUNO
+========================= */
+
+async function excluirAluno(id) {
+
+    const aluno = S.alunos[id];
+
+    if (!aluno) return;
+
+    const confirmar = confirm(
+        `Excluir o aluno "${aluno.nome}"?`
+    );
+
+    if (!confirmar) return;
+
+    const atualizacoes = {};
+
+    atualizacoes[`alunos/${id}`] = null;
+
+    if (aluno.instrumento) {
+        atualizacoes[
+            `instrumentos/${aluno.instrumento}/alunoId`
+        ] = null;
+    }
+
+    await db.ref().update(atualizacoes);
+
+    mostrarToast("Aluno excluído.");
+}
+
+
+/* =========================
+   TROCAR INSTRUMENTO
+========================= */
+
+async function trocarInstrumento(alunoId) {
+
+    const aluno = S.alunos[alunoId];
+
+    if (!aluno) return;
+
+    const livres = Object.entries(S.instrumentos)
+        .filter(([id, instrumento]) =>
+            !instrumento.alunoId &&
+            instrumento.condicao !== "defeituoso"
+        );
+
+    if (livres.length === 0) {
+        alert("Não há instrumentos livres em boas condições.");
+        return;
+    }
+
+    let mensagem = "Escolha o ID do instrumento:\n\n";
+
+    livres.forEach(([id, instrumento]) => {
+
+        mensagem +=
+            `${id} - ${instrumento.tipo} nº ${instrumento.numero}\n`;
+
+    });
+
+    const novoIdInstrumento = prompt(mensagem);
+
+    if (!novoIdInstrumento) return;
+
+    if (!S.instrumentos[novoIdInstrumento]) {
+        alert("Instrumento não encontrado.");
+        return;
+    }
+
+    const instrumento = S.instrumentos[novoIdInstrumento];
+
+    if (instrumento.alunoId) {
+        alert("Esse instrumento já está em uso.");
+        return;
+    }
+
+    const atualizacoes = {};
+
+    if (aluno.instrumento) {
+        atualizacoes[
+            `instrumentos/${aluno.instrumento}/alunoId`
+        ] = null;
+    }
+
+    atualizacoes[
+        `instrumentos/${novoIdInstrumento}/alunoId`
+    ] = alunoId;
+
+    atualizacoes[
+        `alunos/${alunoId}/instrumento`
+    ] = novoIdInstrumento;
+
+    await db.ref().update(atualizacoes);
+
+    mostrarToast("Instrumento trocado!");
+}
+
+
+/* =========================
+   INSTRUMENTOS
+========================= */
+
+function renderizarInstrumentos() {
+
+    const lista = document.getElementById("instrumentos");
+
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    let instrumentos = Object.entries(S.instrumentos);
+
+    instrumentos = instrumentos.filter(([id, instrumento]) => {
+
+        if (filtroInstrumentos === "livres") {
+            return !instrumento.alunoId;
+        }
+
+        if (filtroInstrumentos === "uso") {
+            return !!instrumento.alunoId;
+        }
+
+        if (filtroInstrumentos === "defeituosos") {
+            return instrumento.condicao === "defeituoso";
+        }
+
+        return true;
+    });
+
+    if (instrumentos.length === 0) {
+
+        lista.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-secondary">
+                    Nenhum instrumento encontrado.
+                </div>
+            </div>
+        `;
+
+        return;
+    }
+
+    instrumentos.forEach(([id, instrumento]) => {
+
+        const aluno = instrumento.alunoId
+            ? S.alunos[instrumento.alunoId]
+            : null;
+
+        const defeituoso =
+            instrumento.condicao === "defeituoso";
+
+        lista.innerHTML += `
+            <div class="col-md-4 mb-3">
+
+                <div class="card instrument
+                    ${defeituoso ? "border-danger" : "border-success"}">
+
+                    <div class="card-body">
+
+                        <h5>
+                            ${esc(instrumento.tipo)}
+                            nº ${esc(instrumento.numero)}
+                        </h5>
+
+                        <p>
+                            Condição:
+                            <span class="${defeituoso ? "bad" : "ok"}">
+                                ${defeituoso ? "Defeituoso" : "Bom"}
+                            </span>
+                        </p>
+
+                        <p>
+                            ${
+                                aluno
+                                ? `<span class="using">
+                                    Em uso: ${esc(aluno.nome)}
+                                   </span>`
+                                : `<span class="free">
+                                    Livre
+                                   </span>`
+                            }
+                        </p>
+
+                        <div class="d-flex gap-2 flex-wrap">
+
+                            <button
+                                class="btn btn-sm ${defeituoso ? "btn-success" : "btn-warning"}"
+                                onclick="alternarCondicao('${id}')">
+
+                                ${
+                                    defeituoso
+                                    ? "Marcar como bom"
+                                    : "Marcar defeituoso"
+                                }
+
+                            </button>
+
+                            <button
+                                class="btn btn-danger btn-sm"
+                                onclick="excluirInstrumento('${id}')"
+                                ${aluno ? "disabled" : ""}>
+
+                                Excluir
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+    });
+}
+
+
+/* =========================
+   CADASTRAR INSTRUMENTO
+========================= */
+
+document.getElementById("fInst")?.addEventListener("submit", async e => {
+
+    e.preventDefault();
+
+    const tipo = document.getElementById("tipo").value;
+    const numero = document.getElementById("numero").value.trim();
+    const condicao = document.getElementById("condicao").value;
+
+    if (!tipo || !numero) {
+        alert("Preencha todos os campos.");
+        return;
+    }
+
+    const repetido = Object.values(S.instrumentos)
+        .some(i =>
+            i.tipo === tipo &&
+            i.numero === numero
+        );
+
+    if (repetido) {
+        alert("Esse instrumento já está cadastrado.");
+        return;
+    }
+
+    const id = novoId();
+
+    await db.ref(`instrumentos/${id}`).set({
+        tipo,
+        numero,
+        condicao,
+        alunoId: null
+    });
+
+    e.target.reset();
+
+    mostrarToast("Instrumento cadastrado!");
+});
+
+
+/* =========================
+   FILTROS
+========================= */
+
+document.querySelectorAll("[data-f]").forEach(botao => {
+
+    botao.addEventListener("click", () => {
+
+        document
+            .querySelectorAll("[data-f]")
+            .forEach(b => b.classList.remove("active"));
+
+        botao.classList.add("active");
+
+        filtroInstrumentos = botao.dataset.f;
+
+        renderizarInstrumentos();
+    });
+});
+
+
+/* =========================
+   ALTERAR CONDIÇÃO
+========================= */
+
+async function alternarCondicao(id) {
+
+    const instrumento = S.instrumentos[id];
+
+    if (!instrumento) return;
+
+    const novaCondicao =
+        instrumento.condicao === "defeituoso"
+            ? "bom"
+            : "defeituoso";
+
+    await db.ref(
+        `instrumentos/${id}/condicao`
+    ).set(novaCondicao);
+
+    mostrarToast("Condição atualizada.");
+}
+
+
+/* =========================
+   EXCLUIR INSTRUMENTO
+========================= */
+
+async function excluirInstrumento(id) {
+
+    const instrumento = S.instrumentos[id];
+
+    if (!instrumento) return;
+
+    if (instrumento.alunoId) {
+
+        alert(
+            "Não é possível excluir um instrumento que está em uso."
+        );
+
+        return;
+    }
+
+    const confirmar = confirm(
+        `Excluir ${instrumento.tipo} nº ${instrumento.numero}?`
+    );
+
+    if (!confirmar) return;
+
+    await db.ref(`instrumentos/${id}`).remove();
+
+    mostrarToast("Instrumento excluído.");
+}
+
+
+/* =========================
+   CHAMADA
+========================= */
+
+function renderizarChamada() {
+
+    const tabela = document.getElementById("tabela");
+
+    if (!tabela) return;
+
+    const data =
+        document.getElementById("data")?.value;
+
+    if (!data) return;
+
+    const alunos = Object.entries(S.alunos);
+
+    tabela.innerHTML = "";
+
+    let presentes = 0;
+    let faltas = 0;
+
+    alunos.forEach(([id, aluno]) => {
+
+        const chamada =
+            S.chamadas[data]?.[id] || {};
+
+        const instrumento =
+            S.instrumentos[aluno.instrumento];
+
+        if (chamada.p === true) presentes++;
+
+        if (chamada.p === false) faltas++;
+
+        tabela.innerHTML += `
+            <tr>
+
+                <td>${esc(aluno.nome)}</td>
+
+                <td>${esc(aluno.turma)}</td>
+
+                <td>
+                    ${
+                        instrumento
+                        ? `${esc(instrumento.tipo)} nº ${esc(instrumento.numero)}`
+                        : "—"
+                    }
+                </td>
+
+                <td>
+                    ${
+                        instrumento
+                        ? esc(instrumento.numero)
+                        : "—"
+                    }
+                </td>
+
+                <td>
+
+                    <div class="d-flex gap-1 flex-wrap">
+
+                        <button
+                            class="btn btn-sm ${
+                                chamada.p === true
+                                ? "btn-success"
+                                : "btn-outline-success"
+                            }"
+                            onclick="marcarPresenca('${data}','${id}',true)">
+
+                            Presente
+
+                        </button>
+
+                        <button
+                            class="btn btn-sm ${
+                                chamada.p === false
+                                ? "btn-danger"
+                                : "btn-outline-danger"
+                            }"
+                            onclick="marcarPresenca('${data}','${id}',false)">
+
+                            Faltou
+
+                        </button>
+
+                        <button
+                            class="btn btn-sm btn-outline-secondary"
+                            onclick="limparPresenca('${data}','${id}')">
+
+                            Limpar
+
+                        </button>
+
+                    </div>
+
+                </td>
+
+                <td>
+                    <input
+                        class="form-control form-control-sm"
+                        value="${esc(chamada.o || "")}"
+                        placeholder="Observação"
+                        onchange="salvarObservacao('${data}','${id}',this.value)">
+                </td>
+
+            </tr>
+        `;
+    });
+
+    const total = alunos.length;
+
+    document.getElementById("total").textContent = total;
+    document.getElementById("presentes").textContent = presentes;
+    document.getElementById("faltas").textContent = faltas;
+}
+
+
+/* =========================
+   MUDAR DATA DA CHAMADA
+========================= */
+
+document.getElementById("data")?.addEventListener("change", () => {
+    renderizarChamada();
+});
+
+
+/* =========================
+   MARCAR PRESENÇA
+========================= */
+
+async function marcarPresenca(data, alunoId, presente) {
+
+    const atual =
+        S.chamadas[data]?.[alunoId]?.p;
+
+    /*
+       Se clicar novamente no mesmo botão,
+       a presença é desmarcada.
+    */
+
+    if (atual === presente) {
+
+        await db.ref(
+            `chamadas/${data}/${alunoId}/p`
+        ).remove();
+
+    } else {
+
+        await db.ref(
+            `chamadas/${data}/${alunoId}/p`
+        ).set(presente);
+    }
+}
+
+
+/* =========================
+   LIMPAR PRESENÇA
+========================= */
+
+async function limparPresenca(data, alunoId) {
+
+    await db.ref(
+        `chamadas/${data}/${alunoId}/p`
+    ).remove();
+
+}
+
+
+/* =========================
+   OBSERVAÇÃO
+========================= */
+
+async function salvarObservacao(data, alunoId, texto) {
+
+    await db.ref(
+        `chamadas/${data}/${alunoId}/o`
+    ).set(texto);
+}
+
+
+/* =========================
+   BOTÃO SALVAR CHAMADA
+========================= */
+
+document.getElementById("salvar")?.addEventListener("click", () => {
+
+    mostrarToast(
+        "A chamada já foi salva automaticamente."
+    );
+
+});
+
+
+/* =========================
+   AVISOS
+========================= */
+
+function renderizarAvisos() {
+
+    const lista = document.getElementById("avisos");
+
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    const avisos = Object.entries(S.avisos)
+        .sort((a, b) =>
+            (b[1].criadoEm || 0) -
+            (a[1].criadoEm || 0)
+        );
+
+    if (avisos.length === 0) {
+
+        lista.innerHTML = `
+            <div class="alert alert-secondary">
+                Nenhum aviso publicado.
+            </div>
+        `;
+
+        return;
+    }
+
+    avisos.forEach(([id, aviso]) => {
+
+        lista.innerHTML += `
+            <div class="notice">
+
+                <small class="text-muted">
+                    ${formatarDataHora(aviso.criadoEm)}
+                </small>
+
+                <p>${esc(aviso.texto)}</p>
+
+                <button
+                    class="btn btn-danger btn-sm"
+                    onclick="excluirAviso('${id}')">
+
+                    Excluir
+
+                </button>
+
+            </div>
+        `;
+    });
+}
+
+
+/* =========================
+   PUBLICAR AVISO
+========================= */
+
+document.getElementById("fAviso")?.addEventListener("submit", async e => {
+
+    e.preventDefault();
+
+    const texto =
+        document.getElementById("aviso").value.trim();
+
+    if (!texto) return;
+
+    await db.ref("avisos").push({
+        texto,
+        criadoEm: Date.now()
+    });
+
+    e.target.reset();
+
+    mostrarToast("Aviso publicado!");
+});
+
+
+/* =========================
+   EXCLUIR AVISO
+========================= */
+
+async function excluirAviso(id) {
+
+    if (!confirm("Excluir este aviso?")) return;
+
+    await db.ref(`avisos/${id}`).remove();
+
+    mostrarToast("Aviso excluído.");
+}
+
+
+/* =========================
+   EVENTOS
+========================= */
+
+function renderizarEventos() {
+
+    const lista = document.getElementById("eventos");
+
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    const eventos = Object.entries(S.eventos)
+        .sort((a, b) =>
+            String(a[1].data)
+                .localeCompare(String(b[1].data))
+        );
+
+    if (eventos.length === 0) {
+
+        lista.innerHTML = `
+            <div class="alert alert-secondary">
+                Nenhum evento cadastrado.
+            </div>
+        `;
+
+        return;
+    }
+
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    eventos.forEach(([id, evento]) => {
+
+        const passado =
+            evento.data < hoje;
+
+        lista.innerHTML += `
+            <div class="event">
+
+                <span class="badge ${
+                    passado
+                    ? "text-bg-secondary"
+                    : "text-bg-primary"
+                }">
+
+                    ${passado ? "Passado" : "Próximo"}
+
+                </span>
+
+                <h5>${esc(evento.nome)}</h5>
+
+                <p class="mb-1">
+                    <strong>Data:</strong>
+                    ${formatarData(evento.data)}
+                </p>
+
+                <p>
+                    <strong>Local:</strong>
+                    ${esc(evento.local)}
+                </p>
+
+                <button
+                    class="btn btn-danger btn-sm"
+                    onclick="excluirEvento('${id}')">
+
+                    Excluir
+
+                </button>
+
+            </div>
+        `;
+    });
+}
+
+
+/* =========================
+   CADASTRAR EVENTO
+========================= */
+
+document.getElementById("fEvento")?.addEventListener("submit", async e => {
+
+    e.preventDefault();
+
+    const nome =
+        document.getElementById("evNome").value.trim();
+
+    const data =
+        document.getElementById("evData").value;
+
+    const local =
+        document.getElementById("evLocal").value.trim();
+
+    if (!nome || !data || !local) {
+
+        alert("Preencha todos os campos.");
+
+        return;
+    }
+
+    await db.ref("eventos").push({
+        nome,
+        data,
+        local,
+        criadoEm: Date.now()
+    });
+
+    e.target.reset();
+
+    mostrarToast("Evento cadastrado!");
+});
+
+
+/* =========================
+   EXCLUIR EVENTO
+========================= */
+
+async function excluirEvento(id) {
+
+    if (!confirm("Excluir este evento?")) return;
+
+    await db.ref(`eventos/${id}`).remove();
+
+    mostrarToast("Evento excluído.");
+}
+
+
+/* =========================
+   PROBLEMAS
+========================= */
+
+function renderizarProblemas() {
+
+    const lista = document.getElementById("problemas");
+
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    const problemas = Object.entries(S.problemas)
+        .sort((a, b) =>
+            (b[1].criadoEm || 0) -
+            (a[1].criadoEm || 0)
+        );
+
+    if (problemas.length === 0) {
+
+        lista.innerHTML = `
+            <div class="alert alert-secondary">
+                Nenhum problema registrado.
+            </div>
+        `;
+
+        return;
+    }
+
+    problemas.forEach(([id, problema]) => {
+
+        const instrumento =
+            problema.instrumento
+            ? S.instrumentos[problema.instrumento]
+            : null;
+
+        const aberto =
+            problema.status !== "resolvido";
+
+        lista.innerHTML += `
+            <div class="problem ${
+                aberto ? "open" : "done"
+            }">
+
+                <span class="badge ${
+                    aberto
+                    ? "text-bg-danger"
+                    : "text-bg-success"
+                }">
+
+                    ${
+                        aberto
+                        ? "Aberto"
+                        : "Resolvido"
+                    }
+
+                </span>
+
+                <p>
+                    ${esc(problema.descricao)}
+                </p>
+
+                ${
+                    instrumento
+                    ? `
+                        <p>
+                            <strong>Instrumento:</strong>
+                            ${esc(instrumento.tipo)}
+                            nº ${esc(instrumento.numero)}
+                        </p>
+                    `
+                    : ""
+                }
+
+                <div class="d-flex gap-2 flex-wrap">
+
+                    <button
+                        class="btn btn-sm ${
+                            aberto
+                            ? "btn-success"
+                            : "btn-warning"
+                        }"
+                        onclick="alternarProblema('${id}')">
+
+                        ${
+                            aberto
+                            ? "Marcar como resolvido"
+                            : "Reabrir"
+                        }
+
+                    </button>
+
+                    <button
+                        class="btn btn-danger btn-sm"
+                        onclick="excluirProblema('${id}')">
+
+                        Excluir
+
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+    });
+}
+
+
+/* =========================
+   CADASTRAR PROBLEMA
+========================= */
+
+document.getElementById("fProblema")?.addEventListener("submit", async e => {
+
+    e.preventDefault();
+
+    const descricao =
+        document.getElementById("descricao").value.trim();
+
+    const instrumento =
+        document.getElementById("instProblema").value;
+
+    if (!descricao) {
+
+        alert("Digite a descrição do problema.");
+
+        return;
+    }
+
+    const problemaId = novoId();
+
+    const atualizacoes = {};
+
+    atualizacoes[`problemas/${problemaId}`] = {
+        descricao,
+        instrumento: instrumento || null,
+        status: "aberto",
+        criadoEm: Date.now()
+    };
+
+    if (instrumento) {
+
+        atualizacoes[
+            `instrumentos/${instrumento}/condicao`
+        ] = "defeituoso";
+    }
+
+    await db.ref().update(atualizacoes);
+
+    e.target.reset();
+
+    mostrarToast("Problema registrado!");
+});
+
+
+/* =========================
+   ALTERAR PROBLEMA
+========================= */
+
+async function alternarProblema(id) {
+
+    const problema = S.problemas[id];
+
+    if (!problema) return;
+
+    const novoStatus =
+        problema.status === "resolvido"
+            ? "aberto"
+            : "resolvido";
+
+    await db.ref(
+        `problemas/${id}/status`
+    ).set(novoStatus);
+
+    mostrarToast(
+        novoStatus === "resolvido"
+        ? "Problema resolvido."
+        : "Problema reaberto."
+    );
+}
+
+
+/* =========================
+   EXCLUIR PROBLEMA
+========================= */
+
+async function excluirProblema(id) {
+
+    if (!confirm("Excluir este problema?")) return;
+
+    await db.ref(`problemas/${id}`).remove();
+
+    mostrarToast("Problema excluído.");
+}
+
+
+/* =========================
+   BADGE DOS PROBLEMAS
+========================= */
+
+function atualizarBadgeProblemas() {
+
+    const badge =
+        document.getElementById("badgeProblemas");
+
+    if (!badge) return;
+
+    const abertos =
+        Object.values(S.problemas)
+            .filter(p => p.status !== "resolvido")
+            .length;
+
+    badge.textContent = abertos;
+
+    badge.style.display =
+        abertos > 0
+        ? "inline-block"
+        : "none";
+}
+
+
+/* =========================
+   PREENCHER SELECTS
+========================= */
+
+function atualizarSelectInstrumentos() {
+
+    const selectAluno =
+        document.getElementById("instAluno");
+
+    const selectProblema =
+        document.getElementById("instProblema");
+
+    if (selectAluno) {
+
+        const valorAtual = selectAluno.value;
+
+        selectAluno.innerHTML =
+            `<option value="">Sem instrumento</option>`;
+
+        Object.entries(S.instrumentos)
+            .filter(([id, instrumento]) =>
+                !instrumento.alunoId &&
+                instrumento.condicao !== "defeituoso"
+            )
+            .forEach(([id, instrumento]) => {
+
+                selectAluno.innerHTML += `
+                    <option value="${id}">
+                        ${esc(instrumento.tipo)}
+                        nº ${esc(instrumento.numero)}
+                    </option>
+                `;
+            });
+
+        selectAluno.value = valorAtual;
+    }
+
+    if (selectProblema) {
+
+        const valorAtual = selectProblema.value;
+
+        selectProblema.innerHTML =
+            `<option value="">Nenhum instrumento</option>`;
+
+        Object.entries(S.instrumentos)
+            .forEach(([id, instrumento]) => {
+
+                selectProblema.innerHTML += `
+                    <option value="${id}">
+                        ${esc(instrumento.tipo)}
+                        nº ${esc(instrumento.numero)}
+                    </option>
+                `;
+            });
+
+        selectProblema.value = valorAtual;
+    }
+}
+
+
+/* =========================
+   ATUALIZAÇÃO AUTOMÁTICA DOS SELECTS
+========================= */
+
+const renderizarOriginal = renderizar;
+
+renderizar = function () {
+
+    renderizarAlunos();
+    renderizarInstrumentos();
+    renderizarChamada();
+    renderizarAvisos();
+    renderizarEventos();
+    renderizarProblemas();
+
+    atualizarSelectInstrumentos();
+    atualizarBadgeProblemas();
+};
+
+
+/* =========================
+   TOAST
+========================= */
+
+function mostrarToast(mensagem) {
+
+    const area =
+        document.getElementById("toasts");
+
+    if (!area) return;
+
+    const toast = document.createElement("div");
+
+    toast.className =
+        "toast align-items-center text-bg-dark border-0 show mb-2";
+
+    toast.setAttribute("role", "alert");
+
+    toast.innerHTML = `
+        <div class="d-flex">
+
+            <div class="toast-body">
+                ${esc(mensagem)}
+            </div>
+
+            <button
+                type="button"
+                class="btn-close btn-close-white me-2 m-auto"
+                onclick="this.closest('.toast').remove()">
+            </button>
+
+        </div>
+    `;
+
+    area.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 4000);
+}
+
+
+/* =========================
+   NOTIFICAÇÕES DE NOVOS AVISOS
+========================= */
+
+db.ref("avisos").on("child_added", snapshot => {
+
+    const aviso = snapshot.val();
+
+    if (!aviso) return;
+
+    mostrarToast("📢 Novo aviso publicado!");
+});
+
+
+/* =========================
+   NOTIFICAÇÕES DE EVENTOS
+========================= */
+
+db.ref("eventos").on("child_added", snapshot => {
+
+    const evento = snapshot.val();
+
+    if (!evento) return;
+
+    mostrarToast("📅 Novo evento cadastrado!");
+});
+
+
+/* =========================
+   CONFIGURAÇÃO FIREBASE
+========================= */
+
+function mostrarConfig() {
+
+    const config =
+        document.getElementById("config");
+
+    if (config) {
+        config.style.display = "block";
+    }
+}
+
+
+/* =========================
+   FUNÇÕES AUXILIARES
+========================= */
+
+function novoId() {
+
+    return Date.now().toString(36) +
+        Math.random()
+            .toString(36)
+            .substring(2, 8);
+}
+
+
+function esc(valor) {
+
+    return String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+function formatarData(data) {
+
+    if (!data) return "";
+
+    const partes = data.split("-");
+
+    if (partes.length !== 3) return data;
+
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+
+function formatarDataHora(timestamp) {
+
+    if (!timestamp) return "";
+
+    const data = new Date(timestamp);
+
+    return data.toLocaleString("pt-BR");
+}let alunos=JSON.parse(localStorage.getItem("fanfarra_alunos"))||[];
 let instrumentos=JSON.parse(localStorage.getItem("fanfarra_instrumentos"))||[];
 let chamadas=JSON.parse(localStorage.getItem("fanfarra_chamadas"))||[];
 let filtroAtual="todos";
