@@ -4,7 +4,6 @@
 <head>
 
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>📋 Chamada - Fanfarras</title>
@@ -27,89 +26,51 @@
 
     <div class="container-fluid">
 
-        <a
-            class="navbar-brand fw-bold"
-            href="index.html">
-
+        <a class="navbar-brand fw-bold" href="index.html">
             🎺 FANFARRA
-
         </a>
-
 
         <button
             class="navbar-toggler"
             type="button"
             data-bs-toggle="collapse"
             data-bs-target="#menu">
-
             <span class="navbar-toggler-icon"></span>
-
         </button>
 
-
-        <div
-            class="collapse navbar-collapse"
-            id="menu">
+        <div class="collapse navbar-collapse" id="menu">
 
             <ul class="navbar-nav ms-auto">
 
                 <li class="nav-item">
-                    <a
-                        class="nav-link active"
-                        href="chamada.html">
-
+                    <a class="nav-link active" href="chamada.html">
                         📋 Chamada
-
                     </a>
                 </li>
-
                 <li class="nav-item">
-                    <a
-                        class="nav-link"
-                        href="alunos.html">
-
+                    <a class="nav-link" href="alunos.html">
                         👥 Alunos
-
                     </a>
                 </li>
-
                 <li class="nav-item">
-                    <a
-                        class="nav-link"
-                        href="instrumentos.html">
-
+                    <a class="nav-link" href="instrumentos.html">
                         🎺 Instrumentos
-
                     </a>
                 </li>
-
                 <li class="nav-item">
-                    <a
-                        class="nav-link"
-                        href="avisos.html">
-
+                    <a class="nav-link" href="avisos.html">
                         📢 Avisos
-
                     </a>
                 </li>
-
                 <li class="nav-item">
-                    <a
-                        class="nav-link"
-                        href="eventos.html">
-
+                    <a class="nav-link" href="eventos.html">
                         📅 Eventos
-
                     </a>
                 </li>
-
                 <li class="nav-item">
-                    <a
-                        class="nav-link"
-                        href="problemas.html">
-
+                    <a class="nav-link" href="problemas.html">
                         ⚠️ Problemas
-
+                        <span id="badgeProblemas" class="badge bg-danger">0</span>
                     </a>
                 </li>
 
@@ -128,221 +89,89 @@
 
 <main class="container py-4">
 
-    <section>
+<section>
 
-        <h2>📋 Chamada</h2>
-
-        <p class="text-muted">
-            Registre a presença dos alunos nos ensaios.
-        </p>
-
-
-        <!-- DATA -->
-
-        <div class="card mb-4">
-
-            <div class="card-body">
-
-                <label
-                    for="data"
-                    class="form-label fw-bold">
-
-                    Data da chamada
-
-                </label>
-
-                <input
-                    type="date"
-                    id="data"
-                    class="form-control">
-
-            </div>
-
+    <div class="page-header">
+        <div>
+            <h1>📋 Chamada</h1>
+            <p>Registre a presença dos alunos nos ensaios. Tudo é salvo automaticamente.</p>
         </div>
+        <a href="index.html" class="btn btn-outline-secondary">← Início</a>
+    </div>
 
-
-        <!-- RESUMO -->
-
-        <div class="row g-3 mb-4">
-
-            <div class="col-4">
-
-                <div class="sum">
-
-                    <strong id="total">
-                        0
-                    </strong>
-
-                    Total
-
-                </div>
-
-            </div>
-
-
-            <div class="col-4">
-
-                <div class="sum good">
-
-                    <strong id="presentes">
-                        0
-                    </strong>
-
-                    Presentes
-
-                </div>
-
-            </div>
-
-
-            <div class="col-4">
-
-                <div class="sum bad">
-
-                    <strong id="faltas">
-                        0
-                    </strong>
-
-                    Faltas
-
-                </div>
-
-            </div>
-
+    <div class="card mb-4">
+        <div class="card-body">
+            <label class="form-label" for="dataChamada">Data do ensaio</label>
+            <input type="date" id="dataChamada" class="form-control" style="max-width: 260px;">
         </div>
+    </div>
 
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="sum">Total <strong id="total">0</strong></div>
+        </div>
+        <div class="col-md-4">
+            <div class="sum good">Presentes <strong id="presentes">0</strong></div>
+        </div>
+        <div class="col-md-4">
+            <div class="sum bad">Faltas <strong id="faltas">0</strong></div>
+        </div>
+    </div>
 
-        <!-- TABELA -->
-
-        <div class="card">
-
-            <div class="card-body">
-
-                <div class="table-responsive">
-
-                    <table
-                        class="table table-hover align-middle">
-
-                        <thead>
-
-                            <tr>
-
-                                <th>
-                                    Aluno
-                                </th>
-
-                                <th>
-                                    Turma
-                                </th>
-
-                                <th>
-                                    Instrumento
-                                </th>
-
-                                <th>
-                                    Nº
-                                </th>
-
-                                <th>
-                                    Presença
-                                </th>
-
-                                <th>
-                                    Observação
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody id="tabela">
-
-                            <!--
-                                Os alunos serão
-                                carregados pelo app.js
-                            -->
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-
-                <button
-                    id="salvar"
-                    class="btn btn-success">
-
-                    💾 Salvar chamada
-
-                </button>
-
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Aluno</th>
+                            <th>Turma</th>
+                            <th>Instrumento</th>
+                            <th>Nº</th>
+                            <th>Presença</th>
+                            <th>Observação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaChamada"></tbody>
+                </table>
             </div>
 
+            <button id="salvarChamada" class="btn btn-success">💾 Salvar chamada</button>
         </div>
-
-    </section>
+    </div>
+</section>
 
 </main>
 
 
-<!-- =========================
-     RODAPÉ
-========================= -->
-
 <footer>
-
-    🎺 Sistema de Gerenciamento da Fanfarras
-
+    <p>🎺 Sistema da Fanfarra</p>
 </footer>
 
 
-<!-- =========================
-     TOASTS
-========================= -->
-
-<div
-    id="toasts"
-    class="position-fixed bottom-0 end-0 p-3">
-
-</div>
+<!-- MENSAGENS -->
+<div id="toasts" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
 
 
 <!-- =========================
      FIREBASE
 ========================= -->
 
-<script
-    src="https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js">
-</script>
-
-<script
-    src="https://www.gstatic.com/firebasejs/12.4.0/firebase-auth-compat.js">
-</script>
-
-<script
-    src="https://www.gstatic.com/firebasejs/12.4.0/firebase-database-compat.js">
-</script>
-
+<script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-database-compat.js"></script>
 
 <script src="firebase-config.js"></script>
 
-
 <script>
-
     firebase.initializeApp(firebaseConfig);
-
 </script>
-
-
-<script src="app.js"></script>
 
 
 <!-- BOOTSTRAP -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
-</script>
+<script src="app.js"></script>
 
 </body>
 
