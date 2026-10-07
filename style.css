@@ -1,4 +1,306 @@
-*{box-sizing:border-box}
+body {
+    background: #f3f5f7;
+    color: #20252b;
+    font-family: Arial, sans-serif;
+}
+
+.navbar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+.navbar-brand {
+    font-size: 1.25rem;
+}
+
+section {
+    scroll-margin-top: 75px;
+    margin-bottom: 55px;
+}
+
+section h2 {
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+/* CARDS */
+.card {
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08);
+}
+
+/* CAMPOS */
+.form-control,
+.form-select {
+    min-height: 44px;
+    border-radius: 9px;
+}
+
+textarea.form-control {
+    min-height: 100px;
+}
+
+/* RESUMO DA CHAMADA */
+.sum {
+    background: white;
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08);
+    border-left: 5px solid #6c757d;
+}
+
+.sum strong {
+    display: block;
+    font-size: 1.8rem;
+}
+
+.sum.good {
+    border-color: #198754;
+    color: #198754;
+}
+
+.sum.bad {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+/* BOTÕES DE FILTRO */
+.filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.filters button {
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.filters button:hover {
+    background: #e9ecef;
+}
+
+.filters button.active {
+    background: #212529;
+    color: #fff;
+}
+
+/* INSTRUMENTOS */
+.instrument {
+    height: 100%;
+    padding: 18px;
+    border-radius: 14px;
+}
+
+.instrument h5 {
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.ok {
+    color: #198754;
+    font-weight: bold;
+}
+
+.bad {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.using {
+    color: #0d6efd;
+    font-weight: bold;
+}
+
+.free {
+    color: #6c757d;
+    font-weight: bold;
+}
+
+/* AVISOS */
+.notice {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px;
+    margin: 10px 0;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08);
+}
+
+.notice p {
+    margin: 8px 0;
+    font-size: 1.05rem;
+    white-space: pre-wrap;
+}
+
+/* EVENTOS */
+.event {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px;
+    margin: 10px 0;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08);
+}
+
+.event h5 {
+    margin-top: 8px;
+    font-weight: 800;
+}
+
+/* PROBLEMAS */
+.problem {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px;
+    margin: 10px 0;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08);
+}
+
+.problem.open {
+    border-left: 5px solid #dc3545;
+}
+
+.problem.done {
+    border-left: 5px solid #198754;
+}
+
+.problem p {
+    margin: 8px 0;
+}
+
+/* TABELAS */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background: #f0f2f4;
+    white-space: nowrap;
+}
+
+.table td,
+.table th {
+    vertical-align: middle;
+}
+
+.table-responsive {
+    border-radius: 14px;
+}
+
+/* BADGE DOS PROBLEMAS */
+#badgeProblemas {
+    margin-left: 3px;
+    font-size: 0.7rem;
+}
+
+/* TOASTS */
+#toasts {
+    z-index: 2000;
+}
+
+/* RODAPÉ */
+footer {
+    background: #151a21;
+    color: #ddd;
+    text-align: center;
+    padding: 20px;
+    margin-top: 30px;
+}
+
+/* BOTÕES */
+.btn {
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.btn-success {
+    background: #198754;
+}
+
+.btn-danger {
+    background: #dc3545;
+}
+
+/* RESPONSIVO PARA CELULAR */
+@media (max-width: 700px) {
+
+    body {
+        font-size: 15px;
+    }
+
+    main {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    section {
+        margin-bottom: 40px;
+    }
+
+    section h2 {
+        font-size: 1.4rem;
+    }
+
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 10px;
+    }
+
+    .sum {
+        padding: 10px 3px;
+    }
+
+    .sum strong {
+        font-size: 1.5rem;
+    }
+
+    .sum {
+        font-size: 0.85rem;
+    }
+
+    /* Permite rolar a tabela horizontalmente no celular */
+    .table {
+        min-width: 850px;
+    }
+
+    .instrument {
+        padding: 15px;
+    }
+
+    .filters button {
+        flex: 1;
+        min-width: 70px;
+    }
+
+    .btn {
+        min-height: 40px;
+    }
+}
+
+/* CELULAR PEQUENO */
+@media (max-width: 400px) {
+
+    .sum strong {
+        font-size: 1.3rem;
+    }
+
+    .sum {
+        font-size: 0.75rem;
+    }
+
+    section h2 {
+        font-size: 1.25rem;
+    }
+}*{box-sizing:border-box}
 body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;background:#f4f6f9;display:flex;flex-direction:column}
 main{flex:1}
 .navbar{background:linear-gradient(135deg,#111827,#1e3a8a)}
