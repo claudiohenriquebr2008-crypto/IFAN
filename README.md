@@ -18,7 +18,13 @@ Sistema web para gerenciamento de uma fanfarra.
 
 Todos os arquivos ficam na mesma pasta:
 
-- `index.html`
+- `index.html` — página inicial com atalhos para cada sistema
+- `chamada.html` — chamada dos alunos
+- `alunos.html` — cadastro de alunos
+- `instrumentos.html` — cadastro e controle de instrumentos
+- `avisos.html` — avisos para a fanfarra
+- `eventos.html` — cadastro de eventos
+- `problemas.html` — registro de problemas
 - `style.css`
 - `app.js`
 - `firebase-config.js`
