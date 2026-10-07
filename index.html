@@ -1,56 +1,684 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fanfarra - Chamada</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>🎺 FANFARRA</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark">
-<div class="container">
-<a class="navbar-brand fw-bold" href="index.html">🎺 FANFARRA</a>
-<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu"><span class="navbar-toggler-icon"></span></button>
-<div class="collapse navbar-collapse" id="menu">
-<ul class="navbar-nav ms-auto">
-<li class="nav-item"><a class="nav-link active" href="index.html">📋 Chamada</a></li>
-<li class="nav-item"><a class="nav-link" href="alunos.html">👥 Alunos</a></li>
-<li class="nav-item"><a class="nav-link" href="instrumentos.html">🥁 Instrumentos</a></li>
-</ul>
-</div>
-</div>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container-fluid">
+
+        <a class="navbar-brand fw-bold" href="#">
+            🎺 FANFARRA
+        </a>
+
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#menu"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="menu">
+
+            <ul class="navbar-nav ms-auto">
+
+                <li class="nav-item">
+                    <a class="nav-link" href="#chamada">
+                        📋 Chamada
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="#alunos">
+                        👥 Alunos
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="#instrumentos">
+                        🥁 Instrumentos
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="#avisos">
+                        📢 Avisos
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="#eventos">
+                        📅 Eventos
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="#problemas">
+                        🔧 Problemas
+                        <b id="badgeProblemas" class="badge bg-danger">
+                            0
+                        </b>
+                    </a>
+                </li>
+
+            </ul>
+
+        </div>
+    </div>
 </nav>
 
+
+<!-- MENSAGENS -->
+<div
+    id="toasts"
+    class="toast-container position-fixed top-0 end-0 p-3"
+></div>
+
+
 <main class="container py-4">
-<div class="page-header">
-<div><h1>📋 Chamada da Fanfarra</h1><p>Controle a presença dos integrantes da banda.</p></div>
-<div><label for="dataChamada" class="form-label fw-bold">Data</label><input type="date" id="dataChamada" class="form-control"></div>
-</div>
 
-<div class="row g-3 mb-4">
-<div class="col-md-4"><div class="summary-card"><span>👥 Total</span><strong id="totalAlunos">0</strong></div></div>
-<div class="col-md-4"><div class="summary-card presente"><span>🟢 Presentes</span><strong id="totalPresentes">0</strong></div></div>
-<div class="col-md-4"><div class="summary-card falta"><span>🔴 Faltas</span><strong id="totalFaltas">0</strong></div></div>
-</div>
+    <!-- AVISO DE CONFIGURAÇÃO -->
+    <div
+        id="config"
+        class="alert alert-warning d-none"
+    >
+        <b>Firebase não configurado.</b>
 
-<div class="card shadow-sm">
-<div class="card-header"><h5 class="mb-0">Lista de alunos</h5></div>
-<div class="table-responsive">
-<table class="table table-hover align-middle mb-0">
-<thead><tr><th>Aluno</th><th>Turma</th><th>Instrumento</th><th>Nº</th><th>Presença</th><th>Observação</th></tr></thead>
-<tbody id="listaChamada"></tbody>
-</table>
-</div>
-</div>
+        Edite o arquivo
+        <code>firebase-config.js</code>
+        para ativar o sistema em tempo real.
+    </div>
 
-<div class="d-flex justify-content-end mt-3">
-<button class="btn btn-primary" onclick="salvarChamada()">💾 Salvar chamada</button>
-</div>
+
+    <!-- ========================= -->
+    <!-- CHAMADA -->
+    <!-- ========================= -->
+
+    <section id="chamada">
+
+        <h2>📋 Chamada</h2>
+
+        <p>
+            Presença sincronizada entre os celulares.
+        </p>
+
+
+        <div class="card p-3 mb-3">
+
+            <label class="form-label">
+                Data
+            </label>
+
+            <input
+                id="data"
+                type="date"
+                class="form-control"
+            >
+
+        </div>
+
+
+        <!-- RESUMO -->
+
+        <div class="row g-3 mb-3">
+
+            <div class="col-4">
+
+                <div class="sum">
+
+                    Total
+
+                    <strong id="total">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-4">
+
+                <div class="sum good">
+
+                    Presentes
+
+                    <strong id="presentes">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-4">
+
+                <div class="sum bad">
+
+                    Faltas
+
+                    <strong id="faltas">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- TABELA -->
+
+        <div class="card">
+
+            <div class="table-responsive">
+
+                <table class="table align-middle">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Aluno</th>
+
+                            <th>Turma</th>
+
+                            <th>Instrumento</th>
+
+                            <th>Nº</th>
+
+                            <th>Presença</th>
+
+                            <th>Observação</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="tabela">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <div class="p-3">
+
+                <button
+                    id="salvar"
+                    class="btn btn-success w-100"
+                >
+                    💾 Salvar chamada
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ========================= -->
+    <!-- ALUNOS -->
+    <!-- ========================= -->
+
+    <section id="alunos">
+
+        <h2>👥 Alunos</h2>
+
+
+        <form
+            id="fAluno"
+            class="card p-3 mb-3 row g-2"
+        >
+
+            <div class="col-md-5">
+
+                <input
+                    id="nome"
+                    class="form-control"
+                    placeholder="Nome"
+                    required
+                >
+
+            </div>
+
+
+            <div class="col-md-3">
+
+                <input
+                    id="turma"
+                    class="form-control"
+                    placeholder="Turma"
+                    required
+                >
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <select
+                    id="instAluno"
+                    class="form-select"
+                >
+
+                </select>
+
+            </div>
+
+
+            <div>
+
+                <button class="btn btn-primary">
+
+                    ➕ Cadastrar aluno
+
+                </button>
+
+            </div>
+
+        </form>
+
+
+        <div class="card table-responsive">
+
+            <table class="table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Aluno</th>
+
+                        <th>Turma</th>
+
+                        <th>Instrumento</th>
+
+                        <th>Ações</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="alunos">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ========================= -->
+    <!-- INSTRUMENTOS -->
+    <!-- ========================= -->
+
+    <section id="instrumentos">
+
+        <h2>🥁 Instrumentos</h2>
+
+
+        <form
+            id="fInst"
+            class="card p-3 mb-3 row g-2"
+        >
+
+            <div class="col-md-5">
+
+                <select
+                    id="tipo"
+                    class="form-select"
+                    required
+                >
+
+                    <option value="">
+                        Tipo
+                    </option>
+
+                    <option>
+                        Caixa
+                    </option>
+
+                    <option>
+                        Bumbo
+                    </option>
+
+                    <option>
+                        Surdo
+                    </option>
+
+                    <option>
+                        Prato
+                    </option>
+
+                    <option>
+                        Lira
+                    </option>
+
+                    <option>
+                        Corneta
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="col-md-3">
+
+                <input
+                    id="numero"
+                    class="form-control"
+                    placeholder="Número"
+                    required
+                >
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <select
+                    id="condicao"
+                    class="form-select"
+                >
+
+                    <option value="bom">
+                        Bom
+                    </option>
+
+                    <option value="defeito">
+                        Com defeito
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div>
+
+                <button class="btn btn-primary">
+
+                    ➕ Cadastrar instrumento
+
+                </button>
+
+            </div>
+
+        </form>
+
+
+        <!-- FILTROS -->
+
+        <div class="filters">
+
+            <button
+                class="active"
+                data-f="todos"
+            >
+                Todos
+            </button>
+
+            <button data-f="livres">
+                Livres
+            </button>
+
+            <button data-f="uso">
+                Em uso
+            </button>
+
+            <button data-f="defeito">
+                Com defeito
+            </button>
+
+        </div>
+
+
+        <div
+            id="instrumentos"
+            class="row g-3"
+        ></div>
+
+    </section>
+
+
+
+    <!-- ========================= -->
+    <!-- AVISOS -->
+    <!-- ========================= -->
+
+    <section id="avisos">
+
+        <h2>📢 Avisos</h2>
+
+
+        <form
+            id="fAviso"
+            class="card p-3 mb-3"
+        >
+
+            <textarea
+                id="aviso"
+                class="form-control mb-2"
+                placeholder="Recado para a banda"
+                required
+            ></textarea>
+
+
+            <button class="btn btn-primary">
+
+                Publicar
+
+            </button>
+
+        </form>
+
+
+        <div id="avisos">
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ========================= -->
+    <!-- EVENTOS -->
+    <!-- ========================= -->
+
+    <section id="eventos">
+
+        <h2>📅 Eventos</h2>
+
+
+        <form
+            id="fEvento"
+            class="card p-3 mb-3 row g-2"
+        >
+
+            <div class="col-md-5">
+
+                <input
+                    id="evNome"
+                    class="form-control"
+                    placeholder="Nome do evento"
+                    required
+                >
+
+            </div>
+
+
+            <div class="col-md-3">
+
+                <input
+                    id="evData"
+                    type="date"
+                    class="form-control"
+                    required
+                >
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <input
+                    id="evLocal"
+                    class="form-control"
+                    placeholder="Local"
+                    required
+                >
+
+            </div>
+
+
+            <div>
+
+                <button class="btn btn-primary">
+
+                    ➕ Criar evento
+
+                </button>
+
+            </div>
+
+        </form>
+
+
+        <div id="eventos">
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ========================= -->
+    <!-- PROBLEMAS -->
+    <!-- ========================= -->
+
+    <section id="problemas">
+
+        <h2>
+
+            🔧 Problemas
+
+            <span
+                id="abertos"
+                class="badge bg-danger"
+            >
+                0 abertos
+            </span>
+
+        </h2>
+
+
+        <form
+            id="fProblema"
+            class="card p-3 mb-3 row g-2"
+        >
+
+            <div class="col-md-8">
+
+                <input
+                    id="descricao"
+                    class="form-control"
+                    placeholder="Descreva o problema"
+                    required
+                >
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <select
+                    id="instProblema"
+                    class="form-select"
+                >
+
+                </select>
+
+            </div>
+
+
+            <div>
+
+                <button class="btn btn-danger">
+
+                    🔧 Registrar problema
+
+                </button>
+
+            </div>
+
+        </form>
+
+
+        <div id="problemas">
+
+        </div>
+
+    </section>
+
 </main>
 
-<footer><p>🎺 Sistema de Controle da Fanfarra</p></footer>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<footer>
+
+    🎺 FANFARRA — controle da banda
+
+</footer>
+
+
+
+<!-- FIREBASE -->
+
+<script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-auth-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-database-compat.js"></script>
+
+
+<!-- CONFIGURAÇÃO DO FIREBASE -->
+
+<script src="firebase-config.js"></script>
+
+
+<!-- JAVASCRIPT DO SITE -->
+
 <script src="app.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
