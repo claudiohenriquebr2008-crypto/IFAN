@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fanfarra - Instrumentos</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+<div class="container">
+<a class="navbar-brand fw-bold" href="index.html">🎺 FANFARRA</a>
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu"><span class="navbar-toggler-icon"></span></button>
+<div class="collapse navbar-collapse" id="menu">
+<ul class="navbar-nav ms-auto">
+<li class="nav-item"><a class="nav-link" href="index.html">📋 Chamada</a></li>
+<li class="nav-item"><a class="nav-link" href="alunos.html">👥 Alunos</a></li>
+<li class="nav-item"><a class="nav-link active" href="instrumentos.html">🥁 Instrumentos</a></li>
+</ul>
+</div>
+</div>
+</nav>
+
+<main class="container py-4">
+<div class="page-header">
+<div><h1>🥁 Instrumentos</h1><p>Controle a situação dos instrumentos.</p></div>
+<button class="btn btn-primary" onclick="abrirModalInstrumento()">➕ Novo instrumento</button>
+</div>
+
+<div class="filter-box">
+<button class="btn btn-outline-secondary" onclick="filtrarInstrumentos('todos')">Todos</button>
+<button class="btn btn-outline-success" onclick="filtrarInstrumentos('livre')">🟢 Livres</button>
+<button class="btn btn-outline-primary" onclick="filtrarInstrumentos('uso')">🔵 Em uso</button>
+<button class="btn btn-outline-danger" onclick="filtrarInstrumentos('defeito')">🔴 Com defeito</button>
+</div>
+
+<div class="row g-4" id="listaInstrumentos"></div>
+</main>
+
+<div class="modal fade" id="modalInstrumento" tabindex="-1">
+<div class="modal-dialog"><div class="modal-content">
+<div class="modal-header"><h5 class="modal-title">Novo instrumento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<div class="mb-3"><label class="form-label">Tipo</label>
+<select id="tipoInstrumento" class="form-select">
+<option value="Caixa">Caixa</option><option value="Bumbo">Bumbo</option><option value="Surdo">Surdo</option><option value="Prato">Prato</option><option value="Lira">Lira</option><option value="Corneta">Corneta</option>
+</select></div>
+<div class="mb-3"><label class="form-label">Número</label><input type="number" id="numeroNovoInstrumento" class="form-control" min="1"></div>
+<div class="mb-3"><label class="form-label">Condição</label>
+<select id="condicaoInstrumento" class="form-select"><option value="bom">🟢 Bom</option><option value="defeito">🔴 Com defeito</option></select>
+</div>
+</div>
+<div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" onclick="salvarInstrumento()">💾 Salvar</button></div>
+</div></div>
+</div>
+
+<footer><p>🎺 Sistema de Controle da Fanfarra</p></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
