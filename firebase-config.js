@@ -1,9 +1,9 @@
 const firebaseConfig = {
-  apiKey: "COLOQUE_AQUI_SUA_CHAVE_REAL",
-  authDomain: "ifan.firebaseapp.com",
-  databaseURL: "https://ifan-default-rtdb.firebaseio.com",
-  projectId: "ifan",
-  storageBucket: "ifan.appspot.com",
-  messagingSenderId: "COLOQUE_AQUI_SEU_NUMERO",
-  appId: "COLOQUE_AQUI_SEU_ID_DO_APP"
+  apiKey: "AIzaSyCYWeI3_iJOsyQQK6MKKfFmq_J7DiVRJVw",
+  authDomain: "ifan-f8f19.firebaseapp.com",
+  databaseURL: "https://ifan-f8f19-default-rtdb.firebaseio.com",
+  projectId: "ifan-f8f19",
+  storageBucket: "ifan-f8f19.firebasestorage.app",
+  messagingSenderId: "298503400012",
+  appId: "1:298503400012:web:fb887ebec5fb62fb6622e9"
 };
