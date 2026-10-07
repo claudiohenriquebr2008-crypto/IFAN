@@ -1,4 +1,209 @@
-// ======================================================
+"use strict";
+/* FANFARRA — usa Firebase Realtime Database se o firebase-config.js existir;
+   senão salva só neste aparelho (localStorage). */
+
+const COLS=["alunos","instrumentos","chamadas","avisos","eventos","problemas"];
+const TIPOS=["Caixa","Bumbo","Surdo","Surdo Pequeno","Surdo Médio","Surdo Grande","Prato","Lira","Corneta","Fuzil","Treme Terra"];
+const NAV=[["index","🏠 Início"],["chamada","📋 Chamada"],["alunos","👥 Alunos"],["instrumentos","🥁 Instrumentos"],["avisos","📢 Avisos"],["eventos","📅 Eventos"],["problemas","🔧 Problemas"]];
+const S={},OK=new Set();COLS.forEach(c=>S[c]=[]);
+
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const hoje=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+const fmtData=d=>d?d.split("-").reverse().join("/"):"";
+const byId=(c,id)=>S[c].find(x=>x.id===id);
+const alunoDe=i=>S.alunos.find(a=>a.instrumentoId===i.id);
+const instNome=id=>{const i=byId("instrumentos",id);return i?`${esc(i.tipo)} nº ${esc(i.numero)}`:"—"};
+const ordInst=(a,b)=>a.tipo.localeCompare(b.tipo,"pt")||a.numero-b.numero;
+const badge=(cls,t)=>`<span class="status status-${cls}">${t}</span>`;
+
+/* ---------- Dados ---------- */
+let fb=null,erroInit="";
+try{
+  if(window.firebase&&typeof firebaseConfig!=="undefined"&&firebaseConfig.databaseURL){
+    firebase.initializeApp(firebaseConfig);fb=firebase.database();
+  }
+}catch(e){console.error(e);erroInit=e.message}
+const lsGet=c=>{try{return JSON.parse(localStorage.getItem("fanfarra2_"+c))||[]}catch{return[]}};
+const L={};
+const DB={
+  watch(c,cb){
+    if(fb)fb.ref(c).on("value",s=>{const v=s.val()||{};cb(Object.entries(v).map(([id,o])=>({...o,id})))},
+      e=>banner("danger","🔴 O Firebase recusou o acesso. Em <b>Realtime Database → Regras</b>, permita leitura e escrita (veja o README)."));
+    else{(L[c]=L[c]||[]).push(cb);cb(lsGet(c))}
+  },
+  async put(c,itens){
+    if(fb){const u={};itens.forEach(o=>{const{id,...d}=o;u[id||fb.ref(c).push().key]=d});return fb.ref(c).update(u)}
+    const l=lsGet(c);
+    itens.forEach(o=>{const id=o.id||Date.now()+""+Math.floor(Math.random()*1000),n={...o,id},i=l.findIndex(x=>x.id===id);i<0?l.push(n):l[i]=n});
+    localStorage.setItem("fanfarra2_"+c,JSON.stringify(l));(L[c]||[]).forEach(f=>f(l));
+  },
+  async del(c,id){
+    if(fb)return fb.ref(c+"/"+id).remove();
+    const l=lsGet(c).filter(x=>x.id!==id);
+    localStorage.setItem("fanfarra2_"+c,JSON.stringify(l));(L[c]||[]).forEach(f=>f(l));
+  }
+};
+function banner(t,m){const b=$("#status");if(b)b.innerHTML=`<div class="alert alert-${t} py-2">${m}</div>`}
+function flash(m){$("#flash").innerHTML=`<div>${m}</div>`;setTimeout(()=>$("#flash").innerHTML="",2200)}
+function falha(e){alert("Não foi possível salvar: "+(/permission/i.test(e.message)?"o Firebase negou a permissão (confira as Regras do Realtime Database).":e.message))}
+
+/* ---------- Páginas ---------- */
+const statusOpts=[["aberto","🔴 Aberto"],["resolvido","🟢 Resolvido"]];
+const instOpts=(r,soLivres)=>[["",soLivres?"Sem instrumento":"Nenhum instrumento"],
+  ...[...S.instrumentos].sort(ordInst)
+   .filter(i=>!soLivres||(i.condicao!=="defeito"&&(!alunoDe(i)||i.id===r.instrumentoId)))
+   .map(i=>[i.id,`${i.tipo} nº ${i.numero}`])];
+
+const P={
+index:{t:"🎺 Sistema da Fanfarra",s:"Alunos, instrumentos, chamadas, avisos e eventos.",
+  render(){
+    const prox=S.eventos.filter(e=>e.data>=hoje()).sort((a,b)=>a.data.localeCompare(b.data))[0];
+    const abertos=S.problemas.filter(x=>x.status==="aberto").length;
+    const livres=S.instrumentos.filter(i=>i.condicao!=="defeito"&&!alunoDe(i)).length;
+    const card=(h,t,n,c="")=>`<div class="col-6 col-lg-3"><a class="text-decoration-none" href="${h}.html"><div class="summary-card ${c}"><span>${t}</span><strong>${n}</strong></div></a></div>`;
+    $("#conteudo").innerHTML=`<div class="row g-3 mb-4">${card("alunos","👥 Alunos",S.alunos.length)}${card("instrumentos","🟢 Instr. livres",livres,"presente")}${card("problemas","🔧 Problemas",abertos,"falta")}${card("eventos","📅 Próximo",prox?fmtData(prox.data).slice(0,5):"—")}</div>
+    ${prox?`<div class="alert alert-info">📅 <b>${esc(prox.nome)}</b> — ${fmtData(prox.data)}${prox.local?" · "+esc(prox.local):""}</div>`:""}
+    <div class="atalhos d-grid gap-2 d-md-flex">${NAV.slice(1).map(([f,l])=>`<a class="btn btn-outline-primary" href="${f}.html">${l}</a>`).join("")}</div>`;
+  }},
+
+chamada:{t:"📋 Chamada da Fanfarra",s:"Controle a presença dos integrantes.",
+  topo:`<div><label for="data" class="form-label fw-bold">Data</label><input type="date" id="data" class="form-control"></div>`,
+  render(){
+    const data=$("#data").value||($("#data").value=hoje());
+    if(!$("#cTab")){
+      $("#conteudo").innerHTML=`<div class="row g-3 mb-4"><div class="col-4"><div class="summary-card"><span>👥 Total</span><strong id="nT">0</strong></div></div><div class="col-4"><div class="summary-card presente"><span>🟢 Pres.</span><strong id="nP">0</strong></div></div><div class="col-4"><div class="summary-card falta"><span>🔴 Faltas</span><strong id="nF">0</strong></div></div></div>
+      <div class="card shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Aluno</th><th>Turma</th><th>Instrumento</th><th>Presença</th><th>Observação</th></tr></thead><tbody id="cTab"></tbody></table></div></div>
+      <div class="d-flex justify-content-end mt-3"><button class="btn btn-primary" id="bCham">💾 Salvar chamada</button></div>`;
+      $("#data").onchange=()=>P.chamada.render();
+      $("#bCham").onclick=salvarChamada;
+      $("#cTab").onclick=e=>{const b=e.target.closest("[data-p]");if(!b)return;const d=dr.m[b.dataset.p]||(dr.m[b.dataset.p]={p:false,o:""});d.p=!d.p;dr.sujo=true;pintaBtn(b,d.p);contar()};
+      $("#cTab").oninput=e=>{const a=e.target.dataset.o;if(!a)return;(dr.m[a]||(dr.m[a]={p:false,o:""})).o=e.target.value;dr.sujo=true};
+    }
+    if(dr.data!==data||!dr.sujo){dr={data,m:{},sujo:false};S.chamadas.filter(c=>c.data===data).forEach(c=>dr.m[c.alunoId]={p:!!c.presente,o:c.observacao||""})}
+    const al=[...S.alunos].sort((a,b)=>a.nome.localeCompare(b.nome,"pt"));
+    $("#cTab").innerHTML=al.map(a=>{const d=dr.m[a.id]||{p:false,o:""};
+      return `<tr><td><strong>${esc(a.nome)}</strong></td><td>${esc(a.turma)}</td><td>${instNome(a.instrumentoId)}</td><td><button class="btn btn-sm presenca-btn ${d.p?"btn-success":"btn-outline-danger"}" data-p="${a.id}">${d.p?"🟢 Presente":"🔴 Falta"}</button></td><td><input class="form-control form-control-sm" data-o="${a.id}" value="${esc(d.o)}" placeholder="Ex.: atrasado"></td></tr>`}).join("")
+      ||`<tr><td colspan="5" class="text-center text-muted py-5">Nenhum aluno cadastrado.<br>Vá em <a href="alunos.html">Alunos</a> para cadastrar.</td></tr>`;
+    contar();
+  }},
+
+alunos:{col:"alunos",item:"aluno",t:"👥 Alunos",s:"Cadastre os integrantes da fanfarra.",novo:"Novo aluno",
+  campos:[{k:"nome",l:"Nome",req:1},{k:"turma",l:"Turma",req:1,ph:"Ex.: 8º A"},{k:"instrumentoId",l:"Instrumento (opcional)",t:"select",opts:r=>instOpts(r,true)}],
+  cab:["Aluno","Turma","Instrumento"],
+  lin:a=>[`<strong>${esc(a.nome)}</strong>`,esc(a.turma),instNome(a.instrumentoId)],
+  ordem:(a,b)=>a.nome.localeCompare(b.nome,"pt")},
+
+instrumentos:{col:"instrumentos",item:"instrumento",t:"🥁 Instrumentos",s:"Controle a situação dos instrumentos.",novo:"Novo instrumento",
+  campos:[{k:"tipo",l:"Tipo",t:"select",opts:()=>TIPOS.map(x=>[x,x])},{k:"numero",l:"Número",t:"number",req:1},{k:"condicao",l:"Condição",t:"select",opts:()=>[["bom","🟢 Bom"],["defeito","🔴 Com defeito"]]}],
+  valida:o=>S.instrumentos.some(x=>x.id!==o.id&&x.tipo===o.tipo&&+x.numero===+o.numero)?"Esse instrumento já está cadastrado.":"",
+  podeExcluir:r=>alunoDe(r)?`Em uso por ${alunoDe(r).nome}. Retire do aluno antes de excluir.`:"",
+  filtros:[["todos","Todos",()=>1],["livre","🟢 Livres",i=>!alunoDe(i)],["uso","🔵 Em uso",i=>alunoDe(i)],["defeito","🔴 Com defeito",i=>i.condicao==="defeito"]],
+  cab:["Instrumento","Nº","Condição","Situação"],
+  lin:r=>[`<strong>🥁 ${esc(r.tipo)}</strong>`,esc(r.numero),r.condicao==="defeito"?badge("defeito","🔴 Com defeito"):badge("bom","🟢 Bom"),alunoDe(r)?badge("uso","🔵 "+esc(alunoDe(r).nome)):badge("livre","🟢 Livre")],
+  ordem:ordInst},
+
+avisos:{col:"avisos",item:"aviso",t:"📢 Avisos",s:"Publique informações para toda a fanfarra.",novo:"Novo aviso",
+  campos:[{k:"texto",l:"Aviso",t:"textarea",req:1}],
+  antes:o=>{o.data=o.data||hoje();o.criado=o.criado||Date.now()},
+  cab:["Data","Aviso"],lin:a=>[fmtData(a.data),`<span style="white-space:pre-wrap">${esc(a.texto)}</span>`],
+  ordem:(a,b)=>(b.criado||0)-(a.criado||0)},
+
+eventos:{col:"eventos",item:"evento",t:"📅 Eventos",s:"Ensaios, apresentações e outros eventos.",novo:"Novo evento",
+  campos:[{k:"nome",l:"Nome do evento",req:1},{k:"data",l:"Data",t:"date",req:1,def:hoje()},{k:"local",l:"Local"}],
+  cab:["Data","Evento","Local"],lin:e=>[fmtData(e.data),`<strong>${esc(e.nome)}</strong>`,esc(e.local||"—")],
+  ordem:(a,b)=>a.data.localeCompare(b.data)},
+
+problemas:{col:"problemas",item:"problema",t:"🔧 Problemas",s:"Registre e acompanhe problemas nos instrumentos.",novo:"Registrar problema",
+  campos:[{k:"descricao",l:"Descrição",t:"textarea",req:1},{k:"instrumentoId",l:"Instrumento",t:"select",opts:r=>instOpts(r,false)},{k:"status",l:"Situação",t:"select",opts:()=>statusOpts}],
+  antes:o=>{o.data=o.data||hoje();o.criado=o.criado||Date.now()},
+  async depois(o){ // aberto → instrumento "com defeito"; sem outros abertos → volta a "bom"
+    const i=byId("instrumentos",o.instrumentoId);if(!i)return;
+    const outros=S.problemas.some(x=>x.id!==o.id&&x.instrumentoId===i.id&&x.status==="aberto");
+    const c=o.status==="aberto"?"defeito":outros?"defeito":"bom";
+    if(i.condicao!==c)await DB.put("instrumentos",[{...i,condicao:c}]);
+  },
+  filtros:[["aberto","🔴 Abertos",x=>x.status==="aberto"],["resolvido","🟢 Resolvidos",x=>x.status==="resolvido"],["todos","Todos",()=>1]],
+  cab:["Situação","Problema","Instrumento","Data"],
+  lin:x=>[x.status==="aberto"?badge("defeito","🔴 Aberto"):badge("bom","🟢 Resolvido"),`<span style="white-space:pre-wrap">${esc(x.descricao)}</span>`,instNome(x.instrumentoId),fmtData(x.data)],
+  ordem:(a,b)=>(b.criado||0)-(a.criado||0)}
+};
+
+/* ---------- Chamada ---------- */
+let dr={data:"",m:{},sujo:false};
+function pintaBtn(b,p){b.className="btn btn-sm presenca-btn "+(p?"btn-success":"btn-outline-danger");b.textContent=p?"🟢 Presente":"🔴 Falta"}
+function contar(){const t=S.alunos.length,p=S.alunos.filter(a=>dr.m[a.id]?.p).length;$("#nT").textContent=t;$("#nP").textContent=p;$("#nF").textContent=t-p}
+async function salvarChamada(){
+  const data=$("#data").value;if(!data)return alert("Selecione a data.");
+  if(!S.alunos.length)return alert("Cadastre alunos primeiro.");
+  const itens=S.alunos.map(a=>{const d=dr.m[a.id]||{p:false,o:""};return{id:`${data}_${a.id}`,data,alunoId:a.id,presente:d.p,observacao:(d.o||"").trim()}});
+  try{await DB.put("chamadas",itens);dr.sujo=false;flash("✅ Chamada salva!")}catch(e){falha(e)}
+}
+
+/* ---------- Lista + cadastro genérico ---------- */
+const page=document.body.dataset.page,p=P[page];
+let filtro=p.filtros?p.filtros[0][0]:"",editId="",modal;
+
+function renderLista(){
+  let a=[...S[p.col]];
+  if(p.filtros)a=a.filter(p.filtros.find(f=>f[0]===filtro)[2]);
+  a.sort(p.ordem);
+  const fl=p.filtros?`<div class="filter-box">${p.filtros.map(f=>`<button class="btn btn-outline-secondary ${f[0]===filtro?"on":""}" data-f="${f[0]}">${f[1]}</button>`).join("")}</div>`:"";
+  const rows=a.map(r=>`<tr>${p.lin(r).map(c=>`<td>${c}</td>`).join("")}<td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-secondary" data-ed="${r.id}">✏️</button> <button class="btn btn-sm btn-outline-danger" data-del="${r.id}">🗑️</button></td></tr>`).join("")
+    ||`<tr><td colspan="${p.cab.length+1}" class="text-center text-muted py-4">Nada por aqui ainda.</td></tr>`;
+  $("#conteudo").innerHTML=`${fl}<div class="card shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr>${p.cab.map(h=>`<th>${h}</th>`).join("")}<th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+
+function abrir(id){
+  const r=id?byId(p.col,id):{};editId=id||"";
+  $("#mTitulo").textContent=(id?"Editar ":"Novo ")+p.item;
+  $("#mCorpo").innerHTML=p.campos.map(f=>{
+    const v=r[f.k]??f.def??"",i=`f_${f.k}`;
+    const inp=f.t==="select"?`<select class="form-select" id="${i}">${f.opts(r).map(([val,lab])=>`<option value="${esc(val)}" ${val==v?"selected":""}>${esc(lab)}</option>`).join("")}</select>`
+      :f.t==="textarea"?`<textarea class="form-control" rows="3" id="${i}">${esc(v)}</textarea>`
+      :`<input class="form-control" type="${f.t||"text"}" id="${i}" value="${esc(v)}" ${f.t==="number"?'min="1"':""} placeholder="${esc(f.ph||"")}">`;
+    return `<div class="mb-3"><label class="form-label" for="${i}">${f.l}</label>${inp}</div>`}).join("");
+  modal.show();
+}
+
+async function salvar(){
+  const o={...(editId?byId(p.col,editId):{})};
+  for(const f of p.campos){o[f.k]=$("#f_"+f.k).value.trim();if(f.req&&!o[f.k])return alert(`Preencha: ${f.l}.`)}
+  p.antes?.(o);
+  const m=p.valida?.(o);if(m)return alert(m);
+  try{
+    if(!editId&&fb)o.id=fb.ref(p.col).push().key; // id conhecido para o "depois"
+    else if(!editId)o.id=Date.now()+""+Math.floor(Math.random()*1000);
+    await DB.put(p.col,[o]);if(p.depois)await p.depois(o);
+    modal.hide();flash("✅ Salvo!");
+  }catch(e){falha(e)}
+}
+
+async function excluir(id){
+  const m=p.podeExcluir?.(byId(p.col,id));if(m)return alert(m);
+  if(!confirm("Excluir este registro?"))return;
+  try{await DB.del(p.col,id)}catch(e){falha(e)}
+}
+
+/* ---------- Início ---------- */
+function shell(){
+  $("#app").innerHTML=`<nav class="navbar navbar-expand-lg navbar-dark"><div class="container"><a class="navbar-brand fw-bold" href="index.html">🎺 FANFARRA</a><button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="menu"><ul class="navbar-nav ms-auto">${NAV.map(([f,l])=>`<li class="nav-item"><a class="nav-link ${f===page?"active":""}" href="${f}.html">${l}</a></li>`).join("")}</ul></div></div></nav>
+  <main class="container py-4"><div id="status"></div><div class="page-header"><div><h1>${p.t}</h1><p>${p.s}</p></div>${p.novo?`<button class="btn btn-primary" id="bNovo">➕ ${p.novo}</button>`:""}${p.topo||""}</div><div id="conteudo"><p class="text-muted">Carregando…</p></div></main>
+  <footer><p>🎺 Sistema de Controle da Fanfarra</p></footer>
+  <div class="modal fade" id="modal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="mTitulo"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="mCorpo"></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="bSalvar">💾 Salvar</button></div></div></div></div><div id="flash"></div>`;
+  modal=new bootstrap.Modal($("#modal"));
+  if(p.novo){$("#bNovo").onclick=()=>abrir();$("#bSalvar").onclick=salvar}
+  $("#conteudo").onclick=e=>{const b=e.target.closest("button");if(!b||!p.col)return;
+    if(b.dataset.ed)abrir(b.dataset.ed);else if(b.dataset.del)excluir(b.dataset.del);else if(b.dataset.f){filtro=b.dataset.f;renderLista()}};
+  $("#mCorpo").onkeydown=e=>{if(e.key==="Enter"&&e.target.tagName==="INPUT")salvar()};
+  if(fb)banner("success","🟢 Conectado ao Firebase — dados sincronizados entre os aparelhos.");
+  else banner("warning",`⚠️ Modo local: os dados ficam só neste aparelho. Para sincronizar, configure o <b>firebase-config.js</b>.${erroInit?" ("+esc(erroInit)+")":""}`);
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  shell();
+  COLS.forEach(c=>DB.watch(c,a=>{S[c]=a;OK.add(c);if(OK.size===COLS.length)p.render?p.render():renderLista()}));
+});// ======================================================
 // 🎺 SISTEMA DE GERENCIAMENTO DA FANFARRA
 // app.js
 // ======================================================
