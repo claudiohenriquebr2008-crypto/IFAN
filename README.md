@@ -1,4 +1,20 @@
-# 🎺 Fanfarras
+# 🎺 Sistema de Controle da Fanfarra
+
+Páginas (todas na mesma pasta): index, chamada, alunos, instrumentos, avisos, eventos, problemas + style.css + app.js.
+
+## Dados
+- Com `firebase-config.js` na pasta (o seu, com `const firebaseConfig = {...}`), tudo é salvo no Firebase Realtime Database e sincroniza entre os celulares.
+- Sem esse arquivo, funciona em modo local (só no aparelho) e mostra um aviso amarelo.
+
+## Firebase — regras do banco
+Realtime Database → Regras (precisa permitir leitura/escrita, senão o cadastro falha):
+
+    { "rules": { ".read": true, ".write": true } }
+
+Atenção: isso deixa o banco aberto a quem tiver o link. Para uma fanfarra escolar costuma bastar; depois dá para adicionar login.
+
+## Publicação
+Envie todos os arquivos (incluindo o firebase-config.js) para a raiz do GitHub/Netlify.# 🎺 Fanfarras
 
 Sistema web para gerenciamento de uma fanfarra.
 
