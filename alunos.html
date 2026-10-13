@@ -23,6 +23,64 @@
     <meta charset="UTF-8">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadastrar aluno - Fanfarra</title><link rel="stylesheet" href="style.css"></head>
+<body><header id="top"></header><main>
+<h2 id="titulo">Cadastrar aluno</h2>
+<div class="card">
+<label>Nome do aluno</label><input id="nome" placeholder="Nome completo">
+<div class="row">
+<div><label>Número da sala</label><input id="sala" placeholder="Ex.: 7, 8B, 101"></div>
+<div><label>Instrumento (número)</label><select id="inst"></select></div>
+</div>
+<p><button id="salvar">Salvar aluno</button> <button class="sec hide" id="cancelar">Cancelar edição</button></p>
+</div>
+<h3>Alunos cadastrados</h3>
+<div id="lista"></div>
+</main><script src="firebase-config.js"></script><script src="app.js"></script><script>"use strict";
+renderHeader("aluno");
+let ins=[],al=[],editId="";
+async function load(){
+ try{[ins,al]=await Promise.all([DB.list("instrumentos"),DB.list("alunos")]);}catch(e){return erroCarga("lista",e);}
+ opcoes(); draw();
+}
+function opcoes(){
+ const sel=$("inst").value;
+ const usados=new Set(al.filter(a=>a.id!==editId).map(a=>a.instrumentoId));
+ const livres=ins.filter(i=>!usados.has(i.id)).sort(ordInst);
+ $("inst").innerHTML='<option value="">Sem instrumento por enquanto</option>'+livres.map(i=>`<option value="${esc(i.id)}" ${i.id===sel?"selected":""}>${esc(nome(i))} — ${ESTADOS[cond(i)]}</option>`).join("");
+}
+function draw(){
+ const lista=[...al].sort((a,b)=>ordem(a.turma,b.turma)||ordem(a.nome,b.nome));
+ $("lista").innerHTML=lista.length?lista.map(a=>{
+  const i=ins.find(x=>x.id===a.instrumentoId);
+  return `<div class="item"><div class="main"><b>${esc(a.nome)}</b><br><small>Sala <span class="sala">${esc(a.turma)}</span> · ${i?`<span class="num">${esc(i.numero)}</span>${esc(i.tipo)}`:"sem instrumento"}</small></div>
+  <div><button class="sec" data-a="edit" data-id="${esc(a.id)}">Editar</button> <button class="del" data-a="del" data-id="${esc(a.id)}">Excluir</button></div></div>`;
+ }).join(""):'<div class="empty">Nenhum aluno cadastrado.</div>';
+}
+function limpar(){editId="";$("nome").value="";$("sala").value="";$("titulo").textContent="Cadastrar aluno";$("salvar").textContent="Salvar aluno";$("cancelar").classList.add("hide");opcoes();}
+$("cancelar").onclick=limpar;
+$("salvar").onclick=()=>run(async()=>{
+ const n=$("nome").value.trim(), s=$("sala").value.trim(), iid=$("inst").value;
+ if(!n) throw new Error("Informe o nome do aluno.");
+ if(!s) throw new Error("Informe o número da sala.");
+ const atual=await DB.list("alunos"); // confere se alguém pegou o instrumento enquanto isso
+ if(iid&&atual.some(a=>a.instrumentoId===iid&&a.id!==editId)) { al=atual; opcoes(); draw(); throw new Error("Esse instrumento já foi entregue a outro aluno."); }
+ const base=editId?(atual.find(a=>a.id===editId)||{}):{};
+ await DB.put("alunos",{...base,nome:n,turma:s,instrumentoId:iid||null});
+ limpar(); await load();
+},"Aluno salvo!");
+delegar($("lista"),"click",{
+ edit:id=>{const a=al.find(x=>x.id===id); if(!a)return; editId=id; $("nome").value=a.nome||""; $("sala").value=a.turma||"";
+  opcoes(); $("inst").value=a.instrumentoId||""; $("titulo").textContent="Editar aluno"; $("salvar").textContent="Atualizar aluno"; $("cancelar").classList.remove("hide"); window.scrollTo({top:0,behavior:"smooth"});},
+ del:id=>run(async()=>{
+  if(!confirm("Excluir este aluno? O instrumento dele ficará disponível.")) return;
+  await DB.del("alunos",id); if(editId===id) limpar(); await load();
+ },"Aluno excluído")
+});
+load();
+</script></body></html>
 
     <title>👥 Alunos - Fanfarras</title>
 
