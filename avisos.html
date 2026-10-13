@@ -1,3 +1,98 @@
+"use strict";
+const TIPOS=["Caixa","Tarol","Bumbo","Surdo pequeno","Surdo médio","Surdo grande","Treme terra","Prato","Lira","Corneta","Fuzil","Repinique","Tamborim","Chocalho","Pandeiro","Agogô","Triângulo","Cuíca"];
+const ESTADOS={bom:"Bom estado",mal:"Mal estado",desafinado:"Desafinado"};
+const PAGINAS=[["index.html","🏠 Início","inicio"],["chamada.html","📋 Chamada","chamada"],["alunos.html","👥 Alunos","alunos"],["instrumentos.html","🥁 Instrumentos","instrumentos"],["avisos.html","📣 Avisos","avisos"],["eventos.html","📅 Eventos","eventos"],["problemas.html","🔧 Problemas","problemas"]];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const idnovo=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const hoje=()=>{let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+const fmt=d=>d?d.split("-").reverse().join("/"):"";
+const localKey=c=>"ifan_fix_"+c;
+function localList(c){try{return JSON.parse(localStorage.getItem(localKey(c))||"{}")}catch{return {}}}
+const DB={
+ cloud:typeof firebase!=="undefined"&&!!firebase.database,
+ cloudError:false,
+ localFallback(){
+   this.cloud=false;this.cloudError=true;
+   const status=document.querySelector("#top .status");
+   if(status)status.firstChild.textContent="⚠️ Firebase sem acesso — salvando localmente neste aparelho. ";
+ },
+ async list(c){
+   let m;
+   if(this.cloud){
+     try{const snap=await firebase.database().ref(c).once("value");m=snap.val()||{}}
+     catch(err){this.localFallback();m=localList(c);}
+   }else m=localList(c);
+   return Object.entries(m).filter(([,v])=>v&&typeof v==="object").map(([id,v])=>({...v,id}))
+ },
+ async save(c,o){
+   let id=o.id||idnovo(),v={...o};delete v.id;
+   if(this.cloud){try{await firebase.database().ref(`${c}/${id}`).set(v)}catch(err){this.localFallback();let m=localList(c);m[id]=v;localStorage.setItem(localKey(c),JSON.stringify(m));}}
+   else{let m=localList(c);m[id]=v;localStorage.setItem(localKey(c),JSON.stringify(m))}
+   return {...v,id}
+ },
+ async del(c,id){
+   if(this.cloud){try{await firebase.database().ref(`${c}/${id}`).remove()}catch(err){this.localFallback();let m=localList(c);delete m[id];localStorage.setItem(localKey(c),JSON.stringify(m));}}
+   else{let m=localList(c);delete m[id];localStorage.setItem(localKey(c),JSON.stringify(m))}
+ }
+};
+function toast(msg,err=false){let old=$("toast");if(old)old.remove();let e=document.createElement("div");e.id="toast";if(err)e.className="err";e.textContent=msg;document.body.append(e);setTimeout(()=>e.remove(),3500)}
+function header(page){$("top").innerHTML=`<h1>🎺 FANFARRA</h1><nav>${PAGINAS.map(p=>`<a href="${p[0]}" class="${p[2]===page?"on":""}">${p[1]}</a>`).join("")}<a href="cadastrar-aluno.html">➕ Cadastrar aluno</a><a href="cadastrar-instrumento.html">➕ Cadastrar instrumento</a></nav><div class="status">${DB.cloud?"🟢 Banco compartilhado conectado":"⚠️ Salvamento local neste aparelho."} <button type="button" class="sec" id="logoutBtn">Sair</button></div>`}
+const badge=e=>`<span class="b ${e}">${esc(ESTADOS[e]||e)}</span>`;
+async function all(){let [alunos,instrumentos,avisos,eventos,problemas,presencas]=await Promise.all(["alunos","instrumentos","avisos","eventos","problemas","presencas"].map(DB.list.bind(DB)));return {alunos,instrumentos,avisos,eventos,problemas,presencas}}
+function opt(arr,val,label){return `<option value="${esc(val)}">${esc(label)}</option>`}
+function layout(title,body){$("conteudo").innerHTML=`<h2>${title}</h2>${body}`}
+async function render(){
+ const page=document.body.dataset.page||"inicio";header(page);
+ try{
+ const d=await all(),al=d.alunos,ins=d.instrumentos;
+ const dono=i=>al.find(a=>a.instrumentoId===i.id);
+ if(page==="inicio"){
+ const livres=ins.filter(i=>!dono(i)).length,abertos=d.problemas.filter(p=>p.status!=="resolvido").length;
+ layout("Painel da Fanfarra",`<div class="stats">${[[al.length,"Alunos"],[ins.length,"Instrumentos"],[livres,"Disponíveis"],[abertos,"Problemas abertos"]].map(x=>`<div class="stat"><b>${x[0]}</b>${x[1]}</div>`).join("")}</div><div class="menu">${PAGINAS.slice(1).map(p=>`<a href="${p[0]}"><b>${p[1]}</b><small>Abrir seção</small></a>`).join("")}</div><h3>Próximos eventos</h3>${d.eventos.filter(e=>e.data>=hoje()).sort((a,b)=>a.data.localeCompare(b.data)).slice(0,5).map(e=>`<div class="item"><div><b>${esc(e.nome)}</b><br><small>${fmt(e.data)} ${esc(e.local||"")}</small></div></div>`).join("")||'<div class="empty">Nenhum evento cadastrado.</div>'}`);
+ } else if(page==="alunos"||page==="cadastro-aluno"){
+ layout("Alunos",`<div class="card"><h3>Cadastrar aluno</h3><form id="formAluno"><div class="row"><div><label>Nome completo</label><input name="nome" required></div><div><label>Turma</label><input name="turma" placeholder="Ex.: 7º A" required></div><div><label>Instrumento</label><select name="instrumentoId"><option value="">Sem instrumento</option>${ins.filter(i=>!dono(i)).map(i=>opt(ins,i.id,`${i.tipo} nº ${i.numero}`)).join("")}</select></div></div><button>Salvar aluno</button></form></div><div id="lista">${al.sort((a,b)=>a.nome.localeCompare(b.nome)).map(a=>`<div class="item"><div class="main"><b>${esc(a.nome)}</b><br><small>Turma ${esc(a.turma)} · ${esc(ins.find(i=>i.id===a.instrumentoId)?`${ins.find(i=>i.id===a.instrumentoId).tipo} nº ${ins.find(i=>i.id===a.instrumentoId).numero}`:"Sem instrumento")}</small></div><button class="del" data-del="alunos" data-id="${a.id}">Excluir</button></div>`).join("")||'<div class="empty">Nenhum aluno cadastrado.</div>'}</div>`);
+ } else if(page==="instrumentos"||page==="cadastro-instrumento"){
+ layout("Instrumentos",`<div class="card"><h3>Cadastrar instrumento</h3><form id="formInst"><div class="row"><div><label>Tipo</label><select name="tipo">${TIPOS.map(t=>opt([],t,t)).join("")}<option value="Outro">Outro</option></select></div><div><label>Número</label><input name="numero" type="number" min="1" required></div><div><label>Estado</label><select name="condicao">${Object.entries(ESTADOS).map(([k,v])=>opt([],k,v)).join("")}</select></div></div><button>Salvar instrumento</button></form></div><div id="lista">${ins.sort((a,b)=>a.tipo.localeCompare(b.tipo)||a.numero-b.numero).map(i=>`<div class="item"><div class="main"><span class="num">${esc(i.numero)}</span><b>${esc(i.tipo)}</b> ${badge(i.condicao||"bom")}<br><small>${dono(i)?`Aluno: ${esc(dono(i).nome)} · ${esc(dono(i).turma)}`:"Disponível"}</small></div><div><select data-state="${i.id}" aria-label="Estado do instrumento">${Object.entries(ESTADOS).map(([k,v])=>`<option value="${k}" ${(i.condicao||"bom")===k?"selected":""}>${v}</option>`).join("")}</select> ${!dono(i)?`<button class="del" data-del="instrumentos" data-id="${i.id}">Excluir</button>`:""}</div></div>`).join("")||'<div class="empty">Nenhum instrumento cadastrado.</div>'}</div>`);
+ } else if(page==="chamada"){
+ let data=$("dataChamada")?.value||hoje(),reg=d.presencas.filter(p=>p.data===data);
+ layout("Chamada",`<div class="card"><label>Data do ensaio</label><input id="dataChamada" type="date" value="${data}"><div class="stats" id="contadores"></div></div><div id="lista">${al.sort((a,b)=>a.nome.localeCompare(b.nome)).map(a=>{let p=reg.find(x=>x.alunoId===a.id);return `<div class="item"><div class="main"><b>${esc(a.nome)}</b><br><small>Turma ${esc(a.turma)} · ${esc(ins.find(i=>i.id===a.instrumentoId)?`${ins.find(i=>i.id===a.instrumentoId).tipo} nº ${ins.find(i=>i.id===a.instrumentoId).numero}`:"Sem instrumento")}</small><input class="obs" data-obs="${a.id}" placeholder="Observação (opcional)" value="${esc(p?.observacao||"")}"></div><div class="pf"><button class="p ${p?.status==="presente"?"on":""}" data-pres="${a.id}" data-status="presente">Presente</button><button class="f ${p?.status==="falta"?"on":""}" data-pres="${a.id}" data-status="falta">Faltou</button></div></div>`}).join("")||'<div class="empty">Cadastre alunos antes de fazer a chamada.</div>'}</div>`);
+ atualizarContadores(reg,al.length);
+ } else if(page==="avisos"||page==="eventos"){
+ const col=page,arr=d[col],isEv=page==="eventos";
+ layout(isEv?"Eventos":"Avisos",`<div class="card"><form id="formRec"><div class="row"><div><label>${isEv?"Nome do evento":"Título do aviso"}</label><input name="nome" required></div><div><label>${isEv?"Data":"Data (opcional)"}</label><input name="data" type="date" ${isEv?"required":""}></div><div><label>${isEv?"Local":"Tipo"}</label><input name="extra" placeholder="${isEv?"Local do evento":"Comunicado"}"></div></div><label>Descrição</label><textarea name="descricao" required></textarea><button>Salvar</button></form></div><div id="lista">${arr.sort((a,b)=>(a.data||"").localeCompare(b.data||"")).map(a=>`<div class="item"><div class="main"><b>${esc(a.nome)}</b> ${a.data?`· ${fmt(a.data)}`:""}<br><small>${esc(a.extra||"")}</small><p>${esc(a.descricao||"")}</p></div><button class="del" data-del="${col}" data-id="${a.id}">Excluir</button></div>`).join("")||'<div class="empty">Nada cadastrado ainda.</div>'}</div>`);
+ } else if(page==="problemas"){
+ layout("Problemas",`<div class="card"><form id="formProblema"><label>Descrição do problema</label><textarea name="descricao" required placeholder="Descreva o problema encontrado"></textarea><label>Instrumento</label><select name="instrumentoId"><option value="">Nenhum instrumento específico</option>${ins.map(i=>opt([],i.id,`${i.tipo} nº ${i.numero}`)).join("")}</select><button>Registrar problema</button></form></div><div id="lista">${d.problemas.map(p=>{let i=ins.find(x=>x.id===p.instrumentoId);return `<div class="item"><div class="main"><b>${esc(p.descricao)}</b><br><small>${i?esc(`${i.tipo} nº ${i.numero}`):"Sem instrumento"} · ${p.status==="resolvido"?"Resolvido":"Em aberto"}</small></div>${p.status!=="resolvido"?`<button data-resolve="${p.id}">Marcar resolvido</button>`:""} <button class="del" data-del="problemas" data-id="${p.id}">Excluir</button></div>`}).join("")||'<div class="empty">Nenhum problema registrado.</div>'}</div>`);
+ }
+ bindForms(page);
+ }catch(e){
+   if(DB.cloud){DB.localFallback();try{const d=await all();header(page);render();return}catch(_){}}
+   layout("Não foi possível carregar",`<div class="errbox">${esc(e.message||e)}</div><p>O Firebase está indisponível. Confira as regras; os dados locais ficam somente neste aparelho.</p>`)
+ }
+}
+function atualizarContadores(reg,total){let el=$("contadores");if(!el)return;let p=reg.filter(x=>x.status==="presente").length,f=reg.filter(x=>x.status==="falta").length;el.innerHTML=[[total,"Alunos"],[p,"Presentes"],[f,"Faltas"],[Math.max(0,total-p-f),"Sem marcar"]].map(x=>`<div class="stat"><b>${x[0]}</b>${x[1]}</div>`).join("")}
+function formData(form){return Object.fromEntries(new FormData(form).entries())}
+function bindForms(page){
+ const fa=$("formAluno");if(fa)fa.onsubmit=async e=>{e.preventDefault();try{let v=formData(fa);await DB.save("alunos",v);toast("Aluno cadastrado!");render()}catch(e){toast(e.message,true)}};
+ const fi=$("formInst");if(fi)fi.onsubmit=async e=>{e.preventDefault();try{let v=formData(fi);v.numero=Number(v.numero);if(v.tipo==="Outro")v.tipo=prompt("Nome do instrumento:")||"";if(!v.tipo)throw Error("Informe o instrumento.");await DB.save("instrumentos",v);toast("Instrumento cadastrado!");render()}catch(e){toast(e.message,true)}};
+ const fr=$("formRec");if(fr)fr.onsubmit=async e=>{e.preventDefault();try{let v=formData(fr);await DB.save(page,v);toast("Salvo com sucesso!");render()}catch(e){toast(e.message,true)}};
+ const fp=$("formProblema");if(fp)fp.onsubmit=async e=>{e.preventDefault();try{let v=formData(fp);v.status="aberto";v.criadoEm=hoje();if(v.instrumentoId){let i=(await DB.list("instrumentos")).find(x=>x.id===v.instrumentoId);if(i)await DB.save("instrumentos",{...i,condicao:"mal"})}await DB.save("problemas",v);toast("Problema registrado!");render()}catch(e){toast(e.message,true)}};
+ const dc=$("dataChamada");if(dc)dc.onchange=render;
+ document.querySelectorAll("[data-pres]").forEach(b=>b.onclick=async()=>{try{let data=$("dataChamada").value,alunoId=b.dataset.pres,status=b.dataset.status,obs=$(`[data-obs="${alunoId}"]`)?.value||"",all=await DB.list("presencas"),old=all.find(p=>p.data===data&&p.alunoId===alunoId);await DB.save("presencas",{...(old||{}),data,alunoId,status,observacao:obs});toast(status==="presente"?"Presença marcada":"Falta marcada");render()}catch(e){toast(e.message,true)}});
+ document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{if(!confirm("Deseja excluir este registro?"))return;try{await DB.del(b.dataset.del,b.dataset.id);toast("Registro excluído");render()}catch(e){toast(e.message,true)}});
+ document.querySelectorAll("[data-state]").forEach(s=>s.onchange=async()=>{try{let a=await DB.list("instrumentos"),i=a.find(x=>x.id===s.dataset.state);if(i)await DB.save("instrumentos",{...i,condicao:s.value});toast("Estado atualizado");render()}catch(e){toast(e.message,true)}});
+ document.querySelectorAll("[data-resolve]").forEach(b=>b.onclick=async()=>{try{let a=await DB.list("problemas"),p=a.find(x=>x.id===b.dataset.resolve);if(p)await DB.save("problemas",{...p,status:"resolvido"});toast("Problema resolvido");render()}catch(e){toast(e.message,true)}});
+}
+document.addEventListener("DOMContentLoaded",()=>{
+ if(!window.firebase||!firebase.auth){location.href="login.html";return}
+ firebase.auth().onAuthStateChanged(user=>{
+   if(!user){location.replace("login.html");return}
+   if(!$("top"))document.body.insertAdjacentHTML("afterbegin",'<header id="top"></header>');
+   if(!$("conteudo"))document.querySelector("main")?.setAttribute("id","conteudo");
+   render();if(DB.cloud&&!window.ifanPolling){window.ifanPolling=true;setInterval(render,8000)}
+   document.addEventListener("click",e=>{if(e.target&&e.target.id==="logoutBtn")firebase.auth().signOut().then(()=>location.replace("login.html"))});
+ });
+});
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
