@@ -1,66 +1,50 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fanfarra - Instrumentos</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
-</head>
-<body data-page="instrumentos">
-<div id="app"></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="app.js"></script>
-</body>
-</html><!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fanfarra - Instrumentos</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<nav class="navbar navbar-expand-lg navbar-dark">
-<div class="container">
-<a class="navbar-brand fw-bold" href="index.html">🎺 FANFARRA</a>
-<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu"><span class="navbar-toggler-icon"></span></button>
-<div class="collapse navbar-collapse" id="menu">
-<ul class="navbar-nav ms-auto">
-<li class="nav-item"><a class="nav-link" href="index.html">📋 Chamada</a></li>
-<li class="nav-item"><a class="nav-link" href="alunos.html">👥 Alunos</a></li>
-<li class="nav-item"><a class="nav-link active" href="instrumentos.html">🥁 Instrumentos</a></li>
-</ul>
-</div>
-</div>
-</nav>
-
-<main class="container py-4">
-<div class="page-header">
-<div><h1>🥁 Instrumentos</h1><p>Controle a situação dos instrumentos.</p></div>
-<button class="btn btn-primary" onclick="abrirModalInstrumento()">➕ Novo instrumento</button>
-</div>
-
-<div class="filter-box">
-<button class="btn btn-outline-secondary" onclick="filtrarInstrumentos('todos')">Todos</button>
-<button class="btn btn-outline-success" onclick="filtrarInstrumentos('livre')">🟢 Livres</button>
-<button class="btn btn-outline-primary" onclick="filtrarInstrumentos('uso')">🔵 Em uso</button>
-<button class="btn btn-outline-danger" onclick="filtrarInstrumentos('defeito')">🔴 Com defeito</button>
-</div>
-
-<div class="row g-4" id="listaInstrumentos"></div>
-</main>
-
-<div class="modal fade" id="modalInstrumento" tabindex="-1">
-<div class="modal-dialog"><div class="modal-content">
-<div class="modal-header"><h5 class="modal-title">Novo instrumento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-<div class="modal-body">
-<div class="mb-3"><label class="form-label">Tipo</label>
-<select id="tipoInstrumento" class="form-select">
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instrumentos - Fanfarra</title><link rel="stylesheet" href="style.css"></head>
+<body><header id="top"></header><main>
+<h2>Instrumentos</h2>
+<div class="stats" id="stats"></div>
+<div class="card"><div class="row">
+<select id="fTipo"></select>
+<select id="fEstado"><option value="">Todos os estados</option><option value="bom">Bom estado</option><option value="mal">Mal estado</option><option value="desafinado">Desafinado</option></select>
+<select id="fStatus"><option value="">Todos</option><option value="uso">Em uso</option><option value="livre">Disponíveis</option></select>
+</div></div>
+<div id="lista"></div>
+</main><script src="firebase-config.js"></script><script src="app.js"></script><script>"use strict";
+renderHeader("instrumentos");
+let ins=[],al=[];
+async function load(){
+ try{[ins,al]=await Promise.all([DB.list("instrumentos"),DB.list("alunos")]);}catch(e){return erroCarga("lista",e);}
+ const cur=$("fTipo").value;
+ const tipos=[...new Set(ins.map(i=>i.tipo))].sort(ordem);
+ $("fTipo").innerHTML='<option value="">Todos os instrumentos</option>'+tipos.map(t=>`<option ${t===cur?"selected":""}>${esc(t)}</option>`).join("");
+ draw();
+}
+const dono=id=>al.find(a=>a.instrumentoId===id);
+function draw(){
+ const ft=$("fTipo").value,fe=$("fEstado").value,fs=$("fStatus").value;
+ const livres=ins.filter(i=>!dono(i.id)).length;
+ $("stats").innerHTML=[[ins.length,"Total"],[ins.length-livres,"Em uso"],[livres,"Disponíveis"],[ins.filter(i=>cond(i)==="mal").length,"Mal estado"],[ins.filter(i=>cond(i)==="desafinado").length,"Desafinados"]].map(s=>`<div class="stat"><b>${s[0]}</b>${s[1]}</div>`).join("");
+ const lista=ins.filter(i=>(!ft||i.tipo===ft)&&(!fe||cond(i)===fe)&&(!fs||(fs==="uso")===!!dono(i.id))).sort(ordInst);
+ $("lista").innerHTML=lista.length?lista.map(i=>{
+  const a=dono(i.id);
+  return `<div class="item"><div class="main"><span class="num">${esc(i.numero)}</span><b>${esc(i.tipo)}</b> ${badge(cond(i))}<br>
+  <small>${a?`Aluno: <b>${esc(a.nome)}</b> · Sala <span class="sala">${esc(a.turma)}</span>`:'<span class="b livre">Disponível</span>'}</small></div>
+  <div><select style="width:auto" data-a="estado" data-id="${esc(i.id)}">${Object.entries(ESTADOS).map(([k,v])=>`<option value="${k}" ${k===cond(i)?"selected":""}>${v}</option>`).join("")}</select>
+  ${a?"":`<button class="del" data-a="del" data-id="${esc(i.id)}">Excluir</button>`}</div></div>`;
+ }).join(""):'<div class="empty">Nenhum instrumento encontrado.</div>';
+}
+["fTipo","fEstado","fStatus"].forEach(id=>$(id).onchange=draw);
+delegar($("lista"),"change",{estado:(id,b)=>run(async()=>{
+ const i=ins.find(x=>x.id===id); const novo=await DB.put("instrumentos",{...i,condicao:b.value});
+ ins=ins.map(x=>x.id===id?novo:x); draw();
+},"Estado atualizado")});
+delegar($("lista"),"click",{del:id=>run(async()=>{
+ if(dono(id)) throw new Error("Instrumento em uso por um aluno.");
+ if(!confirm("Excluir este instrumento?")) return;
+ await DB.del("instrumentos",id); await load();
+},"Excluído")});
+load();
   <!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cadastrar instrumento - Fanfarra</title><link rel="stylesheet" href="style.css"></head>
@@ -114,19 +98,4 @@ delegar($("lista"),"click",{del:id=>run(async()=>{
 },"Excluído")});
 load();
 </script></body></html>
-<option value="Caixa">Caixa</option><option value="Bumbo">Bumbo</option><option value="Surdo">Surdo</option><option value="Prato">Prato</option><option value="Lira">Lira</option><option value="Corneta">Corneta</option>
-</select></div>
-<div class="mb-3"><label class="form-label">Número</label><input type="number" id="numeroNovoInstrumento" class="form-control" min="1"></div>
-<div class="mb-3"><label class="form-label">Condição</label>
-<select id="condicaoInstrumento" class="form-select"><option value="bom">🟢 Bom</option><option value="defeito">🔴 Com defeito</option></select>
-</div>
-</div>
-<div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" onclick="salvarInstrumento()">💾 Salvar</button></div>
-</div></div>
-</div>
-
-<footer><p>🎺 Sistema de Controle da Fanfarra</p></footer>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="app.js"></script>
-</body>
-</html>
+</script></body></html>
