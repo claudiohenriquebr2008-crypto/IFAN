@@ -61,6 +61,59 @@
 <div class="modal-body">
 <div class="mb-3"><label class="form-label">Tipo</label>
 <select id="tipoInstrumento" class="form-select">
+  <!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadastrar instrumento - Fanfarra</title><link rel="stylesheet" href="style.css"></head>
+<body><header id="top"></header><main>
+<h2>Cadastrar instrumento disponível</h2>
+<div class="card">
+<div class="row">
+<div><label>Instrumento</label><select id="tipo"></select></div>
+<div id="outroBox" class="hide"><label>Nome do instrumento</label><input id="outro" placeholder="Ex.: Clarinete"></div>
+<div><label>Número</label><input id="numero" type="number" min="1" inputmode="numeric"></div>
+<div><label>Estado</label><select id="estado"></select></div>
+</div>
+<p><button id="salvar">Salvar instrumento</button></p>
+</div>
+<h3>Instrumentos disponíveis (sem aluno)</h3>
+<div id="lista"></div>
+</main><script src="firebase-config.js"></script><script src="app.js"></script><script>"use strict";
+renderHeader("cadinst");
+let ins=[],al=[];
+$("tipo").innerHTML=TIPOS.map(t=>`<option>${t}</option>`).join("")+'<option value="__outro">Outro...</option>';
+$("estado").innerHTML=Object.entries(ESTADOS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+const tipoAtual=()=>$("tipo").value==="__outro"?$("outro").value.trim():$("tipo").value;
+function sugerir(){
+ $("outroBox").classList.toggle("hide",$("tipo").value!=="__outro");
+ const t=tipoAtual().toLowerCase(); const nums=ins.filter(i=>String(i.tipo).toLowerCase()===t).map(i=>+i.numero||0);
+ $("numero").value=(nums.length?Math.max(...nums):0)+1;
+}
+$("tipo").onchange=sugerir; $("outro").oninput=sugerir;
+async function load(){
+ try{[ins,al]=await Promise.all([DB.list("instrumentos"),DB.list("alunos")]);}catch(e){return erroCarga("lista",e);}
+ sugerir(); draw();
+}
+function draw(){
+ const usados=new Set(al.map(a=>a.instrumentoId));
+ const livres=ins.filter(i=>!usados.has(i.id)).sort(ordInst);
+ $("lista").innerHTML=livres.length?livres.map(i=>`<div class="item"><div class="main"><span class="num">${esc(i.numero)}</span><b>${esc(i.tipo)}</b> ${badge(cond(i))}</div><button class="del" data-a="del" data-id="${esc(i.id)}">Excluir</button></div>`).join(""):'<div class="empty">Nenhum instrumento disponível.</div>';
+}
+$("salvar").onclick=()=>run(async()=>{
+ const t=tipoAtual(), n=parseInt($("numero").value,10);
+ if(!t) throw new Error("Informe o nome do instrumento.");
+ if(!n||n<1) throw new Error("Informe o número do instrumento.");
+ ins=await DB.list("instrumentos");
+ if(ins.some(i=>String(i.tipo).toLowerCase()===t.toLowerCase()&&+i.numero===n)) throw new Error(`Já existe ${t} nº ${n}.`);
+ await DB.put("instrumentos",{tipo:t,numero:n,condicao:$("estado").value});
+ $("outro").value=""; await load();
+},"Instrumento salvo!");
+delegar($("lista"),"click",{del:id=>run(async()=>{
+ if(al.some(a=>a.instrumentoId===id)) throw new Error("Instrumento em uso por um aluno.");
+ if(!confirm("Excluir este instrumento?")) return;
+ await DB.del("instrumentos",id); await load();
+},"Excluído")});
+load();
+</script></body></html>
 <option value="Caixa">Caixa</option><option value="Bumbo">Bumbo</option><option value="Surdo">Surdo</option><option value="Prato">Prato</option><option value="Lira">Lira</option><option value="Corneta">Corneta</option>
 </select></div>
 <div class="mb-3"><label class="form-label">Número</label><input type="number" id="numeroNovoInstrumento" class="form-control" min="1"></div>
