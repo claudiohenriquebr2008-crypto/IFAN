@@ -1,3 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avisos - Fanfarra</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="avisos">
+<header id="top"></header>
+<main id="conteudo"></main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);</script>
+<script src="app.js"></script>
+</body>
+</html>
 "use strict";
 const TIPOS=["Caixa","Tarol","Bumbo","Surdo pequeno","Surdo médio","Surdo grande","Treme terra","Prato","Lira","Corneta","Fuzil","Repinique","Tamborim","Chocalho","Pandeiro","Agogô","Triângulo","Cuíca"];
 const ESTADOS={bom:"Bom estado",mal:"Mal estado",desafinado:"Desafinado"};
