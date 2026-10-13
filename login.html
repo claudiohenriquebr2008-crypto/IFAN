@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar - IFAN</title><link rel="stylesheet" href="style.css">
+<style>.login-wrap{max-width:420px;margin:8vh auto;padding:16px}.login-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px}.login-card h1{color:var(--gold);margin-top:0}.login-card button{width:100%;margin-top:14px}.login-msg{margin-top:12px;color:var(--bad);font-size:.9rem}.login-help{color:var(--muted);font-size:.88rem}</style>
+</head><body>
+<main class="login-wrap"><section class="login-card"><h1>🎺 FANFARRA</h1><h2>Entrar no IFAN</h2><p class="login-help">Use o e-mail e a senha cadastrados pelo administrador do Firebase.</p>
+<form id="loginForm"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required><button id="entrar" type="submit">Entrar</button><div id="mensagem" class="login-msg" role="alert"></div></form></section></main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="firebase-config.js"></script><script>if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);firebase.auth().onAuthStateChanged(user=>{if(user)location.replace('index.html')});document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();const b=document.getElementById('entrar'),m=document.getElementById('mensagem');b.disabled=true;m.textContent='';try{await firebase.auth().signInWithEmailAndPassword(document.getElementById('email').value.trim(),document.getElementById('senha').value);location.replace('index.html')}catch(err){m.textContent=err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'E-mail ou senha incorretos.':err.code==='auth/too-many-requests'?'Muitas tentativas. Tente novamente mais tarde.':'Não foi possível entrar. Confira se o método E-mail/senha está ativado no Firebase.';b.disabled=false}});</script>
+</body></html>
