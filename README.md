@@ -5,6 +5,51 @@
 2. Abra `index.html` para testar no computador. O modo local salva dados somente neste navegador/aparelho.
 3. Para publicar, envie todos os arquivos para a raiz do repositório GitHub e ative GitHub Pages em Settings → Pages → Deploy from a branch → `main` → `/ (root)`.
 
+## Dados compartilhados entre celulares
+O arquivo `firebase-config.js` conecta ao Firebase Realtime Database. Para os dados serem compartilhados:
+- confira se o projeto Firebase e o Realtime Database estão ativos;
+- nas regras do Realtime Database, permita leitura e escrita para o uso de teste (não deixe regras públicas em um sistema real com dados pessoais);
+- publique o site via HTTPS pelo GitHub Pages.
+
+Sem uma configuração válida do Firebase, o site funciona em modo local, mas os dados não são compartilhados entre dispositivos. A chamada e as outras listas atualizam automaticamente a cada 8 segundos quando o Firebase está configurado.
+
+## Arquivos
+- `index.html`: painel
+- `chamada.html`: presença e faltas por data
+- `alunos.html`: cadastro e lista de alunos
+- `instrumentos.html`: cadastro, estado e disponibilidade dos instrumentos
+- `avisos.html` e `eventos.html`: comunicados e agenda
+- `problemas.html`: registrar, resolver e excluir problemas
+- `app.js`: funcionamento do sistema
+- `style.css`: aparência original (as cores foram mantidas)
+- `firebase-config.js`: configuração do banco
+
+
+## Login e segurança do Firebase
+
+Esta versão exige login. No Firebase Console, em Authentication > Sign-in method, ative E-mail/senha. Em Authentication > Users, crie manualmente uma conta para cada pessoa autorizada. Não há cadastro público no site.
+
+Em Realtime Database > Regras, publique estas regras iniciais para exigir login:
+
+```json
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null"
+  }
+}
+```
+
+Depois de colar, clique em **Publicar**. Essas regras permitem que qualquer usuário autenticado acesse todos os dados. Crie contas somente para pessoas autorizadas; para controle mais rigoroso, restrinja por UID/roles. Publique o site por HTTPS (por exemplo, GitHub Pages).
+
+Se o Firebase responder com erro de permissão ou conexão, o app agora tenta continuar em modo local em vez de deixar uma tela de erro azul. Nesse modo, os dados são salvos apenas neste navegador/aparelho e não são compartilhados. Corrija as regras/conexão para voltar à sincronização entre celulares.
+# Sistema de Controle da Fanfarra
+
+## Como usar
+1. Extraia todos os arquivos desta pasta.
+2. Abra `index.html` para testar no computador. O modo local salva dados somente neste navegador/aparelho.
+3. Para publicar, envie todos os arquivos para a raiz do repositório GitHub e ative GitHub Pages em Settings → Pages → Deploy from a branch → `main` → `/ (root)`.
+
 
 ## Arquivos
 - `index.html`: painel
