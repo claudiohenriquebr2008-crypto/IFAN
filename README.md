@@ -1,3 +1,21 @@
+# Sistema de Controle da Fanfarra
+
+## Como usar
+1. Extraia todos os arquivos desta pasta.
+2. Abra `index.html` para testar no computador. O modo local salva dados somente neste navegador/aparelho.
+3. Para publicar, envie todos os arquivos para a raiz do repositório GitHub e ative GitHub Pages em Settings → Pages → Deploy from a branch → `main` → `/ (root)`.
+
+
+## Arquivos
+- `index.html`: painel
+- `chamada.html`: presença e faltas por data
+- `alunos.html`: cadastro e lista de alunos
+- `instrumentos.html`: cadastro, estado e disponibilidade dos instrumentos
+- `avisos.html` e `eventos.html`: comunicados e agenda
+- `problemas.html`: registrar, resolver e excluir problemas
+- `app.js`: funcionamento do sistema
+- `style.css`: aparência original (as cores foram mantidas)
+- `firebase-config.js`: configuração do banco
 # 🎺 Sistema de Controle da Fanfarra
 
 Páginas (todas na mesma pasta): index, chamada, alunos, instrumentos, avisos, eventos, problemas + style.css + app.js.
