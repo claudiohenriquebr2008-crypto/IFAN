@@ -1,4 +1,33 @@
 <!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Início - Fanfarra</title><link rel="stylesheet" href="style.css"></head>
+<body><header id="top"></header><main>
+<h2>Painel da Fanfarra</h2>
+<div id="aviso"></div>
+<div class="stats" id="stats"></div>
+<div id="prox"></div>
+<div class="menu">
+<a href="chamada.html"><b>📋 Chamada</b><small>Presença por número da sala</small></a>
+<a href="instrumentos.html"><b>🥁 Instrumentos</b><small>Numeração, aluno e estado</small></a>
+<a href="avisos.html"><b>📣 Avisos e eventos</b><small>Comunicados e datas</small></a>
+<a href="problemas.html"><b>🔧 Problemas</b><small>Defeitos nos instrumentos</small></a>
+<a href="cadastrar-aluno.html"><b>🧑‍🎓 Cadastrar aluno</b><small>Nome, sala e instrumento</small></a>
+<a href="cadastrar-instrumento.html"><b>➕ Cadastrar instrumento</b><small>Instrumentos disponíveis</small></a>
+</div>
+</main><script src="firebase-config.js"></script><script src="app.js"></script><script>"use strict";
+renderHeader("inicio");
+(async()=>{
+ try{
+  const [al,ins,ev,pr]=await Promise.all([DB.list("alunos"),DB.list("instrumentos"),DB.list("eventos"),DB.list("problemas")]);
+  const usados=new Set(al.map(a=>a.instrumentoId).filter(Boolean));
+  const livres=ins.filter(i=>!usados.has(i.id)).length;
+  const abertos=pr.filter(p=>p.status==="aberto").length;
+  $("stats").innerHTML=[[al.length,"Alunos"],[ins.length,"Instrumentos"],[livres,"Disponíveis"],[ins.filter(i=>cond(i)!=="bom").length,"Mal estado / desafinados"],[abertos,"Problemas abertos"]].map(s=>`<div class="stat"><b>${s[0]}</b>${s[1]}</div>`).join("");
+  const p=ev.filter(e=>e.data>=hoje()).sort((a,b)=>ordem(a.data,b.data))[0];
+  if(p)$("prox").innerHTML=`<div class="card">📅 Próximo evento: <b>${esc(p.nome)}</b> — ${fmtData(p.data)}${p.local?" · "+esc(p.local):""}</div>`;
+ }catch(e){erroCarga("aviso",e);}
+})();
+</script></body></html><!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
