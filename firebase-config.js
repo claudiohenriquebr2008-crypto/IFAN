@@ -7,3 +7,7 @@ const firebaseConfig = {
   messagingSenderId: "298503400012",
   appId: "1:298503400012:web:fb887ebec5fb62fb6622e9"
 };
+
+// false = qualquer pessoa com o link usa o site (regras do banco abertas).
+// true  = exige login com e-mail/senha (veja o LEIA-ME.md).
+const EXIGIR_LOGIN_CFG = false;
