@@ -3,6 +3,54 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar - Fanfarra</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main style="max-width:420px;margin:8vh auto">
+  <section class="card">
+    <h2 style="color:var(--gold)">🎺 FANFARRA</h2>
+    <form id="loginForm">
+      <label for="email">E-mail</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="senha">Senha</label>
+      <input id="senha" type="password" autocomplete="current-password" required>
+      <p><button id="entrar" type="submit">Entrar</button></p>
+      <div id="mensagem" style="color:var(--bad)" role="alert"></div>
+    </form>
+  </section>
+</main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+firebase.initializeApp(firebaseConfig);
+firebase.auth().onAuthStateChanged(u => { if (u) location.replace('index.html'); });
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const b = document.getElementById('entrar'), m = document.getElementById('mensagem');
+  b.disabled = true; m.textContent = '';
+  try {
+    await firebase.auth().signInWithEmailAndPassword(
+      document.getElementById('email').value.trim(),
+      document.getElementById('senha').value);
+    location.replace('index.html');
+  } catch (err) {
+    const bad = ['auth/invalid-credential','auth/wrong-password','auth/user-not-found'];
+    m.textContent = bad.includes(err.code) ? 'E-mail ou senha incorretos.'
+      : err.code === 'auth/too-many-requests' ? 'Muitas tentativas. Tente mais tarde.'
+      : 'Não foi possível entrar (' + err.code + '). Ative E-mail/senha no Firebase.';
+    b.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Problemas - Fanfarra</title>
 <link rel="stylesheet" href="style.css">
 </head>
