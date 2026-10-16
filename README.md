@@ -1,4 +1,4 @@
-# Fanfarra (IFAN) – publicar no Netlify
+# Fanfarra (IFAN) 
 
 ## 1. Firebase (uma vez só)
 Firebase Console → projeto **ifan-f8f19** → Realtime Database → **Regras**. Cole e clique em **Publicar**:
@@ -14,7 +14,7 @@ Atenção: essas regras deixam o banco aberto a quem tiver o link do site.
 - Ou GitHub: envie os arquivos para a raiz do repositório e conecte no Netlify
   (Build command vazio, Publish directory `.`).
 
-## 3. Exigir login (opcional)
-1. Firebase → Authentication → Sign-in method → ative **E-mail/senha** e crie os usuários.
-2. Regras do banco: `{ "rules": { ".read": "auth != null", ".write": "auth != null" } }`
-3. Em `firebase-config.js` troque `EXIGIR_LOGIN_CFG = false` por `true` e publique de novo.
+## 3. Login (já ligado)
+Firebase → Authentication → Sign-in method → ative **E-mail/senha** → aba Users → "Adicionar usuário".
+Regras do banco para exigir login: `{ "rules": { ".read": "auth != null", ".write": "auth != null" } }`
+Para site aberto sem login, em `firebase-config.js` use `EXIGIR_LOGIN_CFG = false` e regras `true`.
