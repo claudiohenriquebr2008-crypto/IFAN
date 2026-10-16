@@ -8,6 +8,6 @@ const firebaseConfig = {
   appId: "1:298503400012:web:fb887ebec5fb62fb6622e9"
 };
 
-// false = qualquer pessoa com o link usa o site (regras do banco abertas).
+// true = exige login (e-mail/senha). false = site aberto a quem tiver o link.
 // true  = exige login com e-mail/senha (veja o LEIA-ME.md).
-const EXIGIR_LOGIN_CFG = false;
+const EXIGIR_LOGIN_CFG = true;
