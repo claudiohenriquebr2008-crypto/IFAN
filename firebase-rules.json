@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "alunos": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
+    "instrumentos": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
+    "presencas": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
+    "avisos": { ".read": "auth != null", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
+    "eventos": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
+    "problemas": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
+    "solicitacoesEventos": { "$id": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && (auth.token.email === 'ADMIN_EMAIL_AQUI' || (!data.exists() && newData.child('uid').val() === auth.uid))" } },
+    "solicitacoesProblemas": { "$id": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && (auth.token.email === 'ADMIN_EMAIL_AQUI' || (!data.exists() && newData.child('uid').val() === auth.uid))" } }
+  }
+}
