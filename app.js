@@ -15,7 +15,7 @@ const PAGINAS = [
     ["problemas.html","🔧 Problemas","problemas"]
 ];
 
-// Lista oficial de administradores autorizados
+// Lista oficial de administradores autorizados (ignorando maiúsculas/minúsculas)
 const administradoresAutorizados = [
     "Administrativo945@gmail.com",
     "claudiohenriquebr2008@gmail.com"
@@ -41,10 +41,6 @@ try {
         fbOk = !!firebase.database;
     }
 } catch (e) { console.error("Firebase init:", e); }
-
-const localKey = c => "ifan_fix_" + c;
-function localList(c) { try { return JSON.parse(localStorage.getItem(localKey(c)) || "{}"); } catch { return {}; } }
-function localSet(c, m) { localStorage.setItem(localKey(c), JSON.stringify(m)); }
 
 const DB = {
     cloud: fbOk,
@@ -85,26 +81,29 @@ function toast(msg, err = false) {
 function header(page) {
     const status = DB.cloud ? `🟢 Conectado: ${isAdmin ? "Administrador" : "Aluno"}` : "🔴 Firebase desconectado";
     const links = isAdmin ? PAGINAS : PAGINAS.filter(p => ["avisos","eventos","problemas"].includes(p[2]));
-    $("top").innerHTML = `
+    const topEl = $("top");
+    if (!topEl) return;
+    topEl.innerHTML = `
         <h1>🎺 FANFARRA</h1>
         <nav>${links.map(p => `<a href="${p[0]}" class="${p[2] === page ? "on" : ""}">${p[1]}</a>`).join("")}
             ${isAdmin ? `<a href="cadastrar-aluno.html" class="${page === "cadastro-aluno" ? "on" : ""}">➕ Aluno</a><a href="cadastrar-instrumento.html" class="${page === "cadastro-instrumento" ? "on" : ""}">➕ Instrumento</a>` : ""}
         </nav><div class="status">${status}<span> · ${esc(currentUser?.email || "")}</span><button type="button" class="sec" id="logoutBtn">Sair</button></div>`;
+    
+    const logoutBtn = $("logoutBtn");
+    if (logoutBtn) {
+        logoutBtn.onclick = async () => {
+            try { await firebase.auth().signOut(); } catch (e) {}
+            location.href = "login.html";
+        };
+    }
 }
 
 const badge = e => `<span class="b ${esc(e)}">${esc(ESTADOS[e] || e)}</span>`;
 const opt = (val, label, sel) => `<option value="${esc(val)}"${sel ? " selected" : ""}>${esc(label)}</option>`;
-const layout = (title, body) => { $("conteudo").innerHTML = `<h2>${title}</h2>${DB.erro ? avisoErro() : ""}${body}`; };
+const layout = (title, body) => { const c = $("conteudo"); if (c) c.innerHTML = `<h2>${title}</h2>${DB.erro ? avisoErro() : ""}${body}`; };
 
 function avisoErro() {
-    return `<div class="warnbox"><b>Não foi possível falar com o banco online (${esc(DB.erro)}).</b><br>Confira a internet e as regras do Firebase (arquivo firebase-rules.json).</div>`;
-}
-
-function emEdicao() {
-    const a = document.activeElement;
-    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) &&$("conteudo")?.contains(a)) return true;
-    return [...document.querySelectorAll("#conteudo form")].some(f =>
-        [...f.elements].some(el => /^(text|number|textarea|search)$/.test(el.type) && el.value));
+    return `<div class="warnbox"><b>Não foi possível falar com o banco online (${esc(DB.erro)}).</b><br>Confira a internet e as regras do Firebase.</div>`;
 }
 
 async function all() {
@@ -131,7 +130,7 @@ async function render() {
 
         if (page === "inicio") {
             if (!isAdmin) {
-                layout("Bem-vindo à Fanfarra", `<p>Você está conectado como usuário. Aqui você vê os avisos e os eventos e pode relatar problemas.</p><div class="menu"><a href="avisos.html"><b>📣 Avisos</b><small>Consultar comunicados</small></a><a href="eventos.html"><b>📅 Eventos</b><small>Ver os próximos eventos</small></a><a href="problemas.html"><b>🔧 Relatar problema</b><small>Enviar relato privado ao administrador</small></a></div>${d.avisos.slice(-3).reverse().map(a => `<div class="item"><div><b>${esc(a.nome)}</b><br><small>${esc(a.descricao || "")}</small></div></div>`).join("")}`);
+                layout("Bem-vindo à Fanfarra", `<p>Você está conectado como aluno. Aqui você vê os avisos, eventos e pode relatar problemas.</p><div class="menu"><a href="avisos.html"><b>📣 Avisos</b><small>Consultar comunicados</small></a><a href="eventos.html"><b>📅 Eventos</b><small>Ver os próximos eventos</small></a><a href="problemas.html"><b>🔧 Relatar problema</b><small>Enviar relato privado</small></a></div>${d.avisos.slice(-3).reverse().map(a => `<div class="item"><div><b>${esc(a.nome)}</b><br><small>${esc(a.descricao || "")}</small></div></div>`).join("")}`);
             } else {
                 const livres = ins.filter(i => !dono(i)).length;
                 const abertos = d.problemas.filter(p => p.status !== "resolvido").length + d.solicitacoesProblemas.filter(p => p.status !== "resolvido").length;
@@ -225,20 +224,20 @@ async function render() {
                 .map(x => `<div class="stat"><b>${x[0]}</b>${x[1]}</div>`).join("");
 
         } else if (page === "avisos") {
-            layout("Avisos", `${isAdmin ? `<div class="card"><form id="formRec"><label>Título do aviso</label><input name="nome" required><label>Data (opcional)</label><input name="data" type="date"><label>Tipo</label><input name="extra" placeholder="Comunicado"><label>Descrição</label><textarea name="descricao" required></textarea><p><button type="submit">Publicar aviso</button></p></form></div>` : `<p>Confira os comunicados publicados pelo administrador.</p>`}<div id="lista">${[...d.avisos].sort((a,b)=>(b.data||"").localeCompare(a.data||"")).map(a=>`<div class="item"><div class="main"><b>${esc(a.nome)}</b> ${a.data ? "· "+fmt(a.data):""}<br><small>${esc(a.extra||"")}</small><p>${esc(a.descricao\vert{}\vert{}"")}</p></div>${isAdmin ? `<button type="button" class="del" data-del="avisos" data-id="${esc(a.id)}">Excluir</button>` : ""}</div>`).join("") || '<div class="empty">Nenhum aviso publicado.</div>'}</div>`);
+            layout("Avisos", `${isAdmin ? `<div class="card"><form id="formRec"><label>Título do aviso</label><input name="nome" required><label>Data (opcional)</label><input name="data" type="date"><label>Tipo</label><input name="extra" placeholder="Comunicado"><label>Descrição</label><textarea name="descricao" required></textarea><p><button type="submit">Publicar aviso</button></p></form></div>` : `<p>Confira os comunicados publicados.</p>`}<div id="lista">${[...d.avisos].sort((a,b)=>(b.data||"").localeCompare(a.data||"")).map(a=>`<div class="item"><div class="main"><b>${esc(a.nome)}</b> ${a.data ? "· "+fmt(a.data):""}<br><small>${esc(a.extra||"")}</small><p>${esc(a.descricao\vert{}\vert{}"")}</p></div>${isAdmin ? `<button type="button" class="del" data-del="avisos" data-id="${esc(a.id)}">Excluir</button>` : ""}</div>`).join("") || '<div class="empty">Nenhum aviso publicado.</div>'}</div>`);
 
         } else if (page === "eventos") {
             if (!isAdmin) {
                 layout("Eventos", `<div id="lista">${[...d.eventos].sort((x,y)=>(x.data||"").localeCompare(y.data||"")).map(a=>`<div class="item"><div class="main"><b>${esc(a.nome)}</b> ·${fmt(a.data)}<br><small>${esc(a.extra\vert{}\vert{}"")}</small><p>${esc(a.descricao||"")}</p></div></div>`).join("") || '<div class="empty">Nenhum evento publicado.</div>'}</div>`);
             } else {
-                layout("Eventos", `<div class="card"><form id="formRec"><label>Nome do evento</label><input name="nome" required><label>Data</label><input name="data" type="date" required><label>Local</label><input name="extra"><label>Descrição</label><textarea name="descricao" required></textarea><p><button type="submit">Salvar evento</button></p></form></div><h3>Sugestões recebidas (visíveis somente ao administrador)</h3><div id="solicitacoesEventos">${d.solicitacoesEventos.map(a=>`<div class="item"><div class="main"><b>${esc(a.nome)}</b> ${a.data?"· "+fmt(a.data):""}<br><small>${esc(a.extra||"")} · enviado por ${esc(a.email\vert{}\vert{}"usuário")}</small><p>${esc(a.descricao||"")}</p></div><button type="button" data-aprovar-evento="${esc(a.id)}">Criar evento</button><button type="button" class="del" data-del="solicitacoesEventos" data-id="${esc(a.id)}">Excluir</button></div>`).join("") || '<div class="empty">Nenhuma sugestão recebida.</div>'}</div><h3>Eventos publicados</h3><div id="lista">${[...d.eventos].sort((a,b)=>(a.data||"").localeCompare(b.data||"")).map(a=>`<div class="item"><div class="main"><b>${esc(a.nome)}</b> ·${fmt(a.data)}<br><small>${esc(a.extra\vert{}\vert{}"")}</small><p>${esc(a.descricao||"")}</p></div><button type="button" class="del" data-del="eventos" data-id="${esc(a.id)}">Excluir</button></div>`).join("") || '<div class="empty">Nenhum evento publicado.</div>'}</div>`);
+                layout("Eventos", `<div class="card"><form id="formRec"><label>Nome do evento</label><input name="nome" required><label>Data</label><input name="data" type="date" required><label>Local</label><input name="extra"><label>Descrição</label><textarea name="descricao" required></textarea><p><button type="submit">Salvar evento</button></p></form></div><h3>Sugestões recebidas</h3><div id="solicitacoesEventos">${d.solicitacoesEventos.map(a=>`<div class="item"><div class="main"><b>${esc(a.nome)}</b> ${a.data?"· "+fmt(a.data):""}<br><small>${esc(a.extra||"")} · enviado por ${esc(a.email\vert{}\vert{}"usuário")}</small><p>${esc(a.descricao||"")}</p></div><button type="button" data-aprovar-evento="${esc(a.id)}">Criar evento</button><button type="button" class="del" data-del="solicitacoesEventos" data-id="${esc(a.id)}">Excluir</button></div>`).join("") || '<div class="empty">Nenhuma sugestão recebida.</div>'}</div><h3>Eventos publicados</h3><div id="lista">${[...d.eventos].sort((a,b)=>(a.data||"").localeCompare(b.data||"")).map(a=>`<div class="item"><div class="main"><b>${esc(a.nome)}</b> ·${fmt(a.data)}<br><small>${esc(a.extra\vert{}\vert{}"")}</small><p>${esc(a.descricao||"")}</p></div><button type="button" class="del" data-del="eventos" data-id="${esc(a.id)}">Excluir</button></div>`).join("") || '<div class="empty">Nenhum evento publicado.</div>'}</div>`);
             }
 
         } else if (page === "problemas") {
             if (!isAdmin) {
                 layout("Relatar problema", `<p>O relato será privado e somente o administrador poderá visualizá-lo.</p><div class="card"><form id="formProblema"><label>Descrição do problema</label><textarea name="descricao" required maxlength="2000" placeholder="Descreva o problema encontrado"></textarea><label>Instrumento (opcional)</label><input name="instrumentoNome" maxlength="120" placeholder="Ex.: caixa nº 3"><button type="submit">Enviar relato privado</button></form></div>`);
             } else {
-                layout("Problemas recebidos", `<p>Somente o administrador pode ver e gerenciar estes relatos.</p><h3>Relatos enviados pelos usuários</h3><div id="lista">${d.solicitacoesProblemas.map(p=>`<div class="item"><div class="main"><b>${esc(p.descricao)}</b><br><small>${esc(p.instrumentoNome||"Sem instrumento indicado")} · ${esc(p.email\vert{}\vert{}"usuário")} · ${esc(p.criadoEm||"")} · ${p.status==="resolvido"?"Resolvido":"Em aberto"}</small></div><div>${p.status!=="resolvido"?`<button type="button" data-resolve-relato="${esc(p.id)}">Marcar resolvido</button>`:""}<button type="button" class="del" data-del="solicitacoesProblemas" data-id="${esc(p.id)}">Excluir</button></div></div>`).join("") || '<div class="empty">Nenhum relato recebido.</div>'}</div><h3>Registros antigos</h3>${d.problemas.map(p=>`<div class="item"><div><b>${esc(p.descricao)}</b><br><small>${esc(p.status||"aberto")}</small></div><button type="button" class="del" data-del="problemas" data-id="${esc(p.id)}">Excluir</button></div>`).join("") || '<div class="empty">Nenhum registro antigo.</div>'}`);
+                layout("Problemas recebidos", `<p>Somente o administrador pode ver e gerenciar estes relatos.</p><h3>Relatos enviados</h3><div id="lista">${d.solicitacoesProblemas.map(p=>`<div class="item"><div class="main"><b>${esc(p.descricao)}</b><br><small>${esc(p.instrumentoNome||"Sem instrumento indicado")} · ${esc(p.email\vert{}\vert{}"usuário")} · ${esc(p.criadoEm||"")} · ${p.status==="resolvido"?"Resolvido":"Em aberto"}</small></div><div>${p.status!=="resolvido"?`<button type="button" data-resolve-relato="${esc(p.id)}">Marcar resolvido</button>`:""}<button type="button" class="del" data-del="solicitacoesProblemas" data-id="${esc(p.id)}">Excluir</button></div></div>`).join("") || '<div class="empty">Nenhum relato recebido.</div>'}</div>`);
             }
         }
         bind(page, d);
@@ -249,7 +248,6 @@ async function render() {
     }
 }
 
-/* ---------- Ações ---------- */
 const dados = f => Object.fromEntries(new FormData(f).entries());
 async function acao(fn, okMsg) {
     try { await fn(); if (okMsg) toast(okMsg); } catch (e) { toast(e.message || String(e), true); }
@@ -274,9 +272,169 @@ function bind(page, d) {
     });
 
     const tipo = $("tipoInst");
-    if (tipo)
+    if (tipo) {
+        tipo.onchange = () => {
+            const outro = $("outroTipo");
+            if (outro) outro.classList.toggle("hide", tipo.value !== "Outro");
+        };
+    }
 
-    const adminsPermitidos = [
-  "Administrativo945@gmail.com",
-  "claudiohenriquebr2008@gmail.com"
-];
+    onSubmit("formInst", async v => {
+        if (v.tipo === "Outro") {
+            v.tipo = (v.outroTipo || "").trim();
+            if (!v.tipo) throw Error("Informe o nome do instrumento.");
+        }
+        delete v.outroTipo;
+        v.numero = Number(v.numero);
+        if (!v.numero) throw Error("Informe o número do instrumento.");
+        await DB.save("instrumentos", v); toast("Instrumento cadastrado!");
+    });
+
+    onSubmit("formRec", async v => {
+        v.nome = v.nome.trim(); v.descricao = (v.descricao || "").trim();
+        if (!v.nome || !v.descricao) throw Error("Preencha todos os campos obrigatórios.");
+        await DB.save(page, v); toast("Publicado com sucesso!");
+    });
+
+    onSubmit("formProblema", async v => {
+        v.descricao = (v.descricao || "").trim();
+        if (!v.descricao) throw Error("Descreva o problema.");
+        await DB.save("solicitacoesProblemas", {
+            descricao: v.descricao,
+            instrumentoNome: (v.instrumentoNome || "").trim(),
+            email: currentUser?.email || "aluno",
+            criadoEm: hoje(),
+            status: "aberto"
+        });
+        toast("Relato enviado com sucesso!");
+    });
+
+    onSubmit("formCadastroAluno", async v => {
+        v.nome = v.nome.trim(); v.sala = v.sala.trim();
+        if (!v.nome || !v.sala) throw Error("Preencha o nome e a sala.");
+        if (v.numero) v.numero = Number(v.numero); else delete v.numero;
+        await firebase.database().ref("cadastrosAlunos/" + currentUser.uid).set({
+            ...v,
+            email: currentUser.email || ""
+        });
+        toast("Cadastro enviado para aprovação!");
+        render();
+    });
+
+    const dc = $("dataChamada");
+    if (dc) dc.onchange = () => { dataSel = dc.value || hoje(); render(); };
+
+    const sc = $("salaChamada");
+    if (sc) sc.onchange = () => { salaSel = sc.value; render(); };
+
+    document.querySelectorAll("[data-pres]").forEach(btn => {
+        btn.onclick = async () => {
+            const alunoId = btn.dataset.pres;
+            const status = btn.dataset.status;
+            const regId = dataSel + "_" + alunoId;
+            const obsEl = document.querySelector(`[data-obs="${alunoId}"]`);
+            const observacao = obsEl ? obsEl.value.trim() : "";
+            await acao(async () => {
+                await firebase.database().ref(`presencas/${regId}`).set({ data: dataSel, alunoId, status, observacao });
+            });
+        };
+    });
+
+    document.querySelectorAll("select[data-aluno-inst]").forEach(sel => {
+        sel.onchange = async () => {
+            const alunoId = sel.dataset.alunoId;
+            const instrumentoId = sel.value;
+            const alObj = d.alunos.find(x => x.id === alunoId);
+            if (!alObj) return;
+            await acao(async () => {
+                await DB.save("alunos", { ...alObj, instrumentoId: instrumentoId || null });
+            }, "Instrumento atualizado!");
+        };
+    });
+
+    document.querySelectorAll("select[data-state]").forEach(sel => {
+        sel.onchange = async () => {
+            const instId = sel.dataset.state;
+            const condicao = sel.value;
+            const insObj = d.instrumentos.find(x => x.id === instId);
+            if (!insObj) return;
+            await acao(async () => {
+                await DB.save("instrumentos", { ...insObj, condicao });
+            }, "Estado atualizado!");
+        };
+    });
+
+    document.querySelectorAll("[data-aprovar-aluno]").forEach(btn => {
+        btn.onclick = async () => {
+            const cadId = btn.dataset.aprovarAluno;
+            const cObj = d.cadastrosAlunos.find(x => x.id === cadId);
+            if (!cObj) return;
+            await acao(async () => {
+                await DB.save("alunos", { nome: cObj.nome, sala: cObj.sala, numero: cObj.numero || null });
+                await firebase.database().ref(`cadastrosAlunos/${cadId}`).remove();
+            }, "Aluno aprovado e adicionado à lista!");
+        };
+    });
+
+    document.querySelectorAll("[data-aprovar-evento]").forEach(btn => {
+        btn.onclick = async () => {
+            const evId = btn.dataset.aprovarEvento;
+            const eObj = d.solicitacoesEventos.find(x => x.id === evId);
+            if (!eObj) return;
+            await acao(async () => {
+                const copia = { ...eObj }; delete copia.id; delete copia.email;
+                await DB.save("eventos", copia);
+                await firebase.database().ref(`solicitacoesEventos/${evId}`).remove();
+            }, "Evento criado com sucesso!");
+        };
+    });
+
+    document.querySelectorAll("[data-resolve-relato]").forEach(btn => {
+        btn.onclick = async () => {
+            const relId = btn.dataset.resolveRelato;
+            const rObj = d.solicitacoesProblemas.find(x => x.id === relId);
+            if (!rObj) return;
+            await acao(async () => {
+                await DB.save("solicitacoesProblemas", { ...rObj, status: "resolvido" });
+            }, "Relato marcado como resolvido!");
+        };
+    });
+
+    document.querySelectorAll("[data-del]").forEach(btn => {
+        btn.onclick = async () => {
+            const col = btn.dataset.del;
+            const id = btn.dataset.id;
+            if (confirm("Tem certeza que deseja excluir este registro?")) {
+                await acao(async () => { await DB.del(col, id); }, "Excluído com sucesso!");
+            }
+        };
+    });
+}
+
+// Inicialização da autenticação do Firebase
+if (fbOk) {
+    firebase.auth().onAuthStateChanged(user => {
+        currentUser = user;
+        if (!user) {
+            if (!location.pathname.endsWith("login.html") && !location.pathname.endsWith("cadastro.html")) {
+                location.replace("login.html");
+            }
+            return;
+        }
+
+        const emailUser = (user.email || "").trim().toLowerCase();
+        isAdmin = administradoresAutorizados.some(e => e.toLowerCase() === emailUser);
+
+        if (location.pathname.endsWith("login.html")) {
+            location.replace("index.html");
+            return;
+        }
+        render();
+    });
+} else {
+    currentUser = { email: "offline@local" };
+    isAdmin = true;
+    render();
+}
+
+})();
