@@ -44,13 +44,11 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    // Inicializa o Firebase se ainda não foi inicializado
     if (typeof firebase !== "undefined" && typeof firebaseConfig !== "undefined") {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
 
-        // Se o usuário já estiver logado, redireciona direto para o início
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 location.replace('index.html');
@@ -65,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const email = document.getElementById('email').value.trim();
+        const email = document.getElementById('email').value.trim().toLowerCase();
         const senha = document.getElementById('senha').value;
 
         btnEntrar.disabled = true;
@@ -78,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             console.error("Erro no login:", err);
             
-            // Tratamento amigável dos códigos de erro do Firebase Auth
             const errorCode = err.code;
             if (errorCode === 'auth/invalid-credential' || errorCode === 'auth/wrong-password' || errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-email') {
                 msgDiv.textContent = 'E-mail ou senha incorretos.';
