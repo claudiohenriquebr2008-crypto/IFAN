@@ -275,3 +275,8 @@ function bind(page, d) {
 
     const tipo = $("tipoInst");
     if (tipo)
+
+    const adminsPermitidos = [
+  "Administrativo945@gmail.com",
+  "claudiohenriquebr2008@gmail.com"
+];
