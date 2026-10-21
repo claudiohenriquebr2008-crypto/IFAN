@@ -3,65 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Entrar - Fanfarra</title>
+<title>Início - Fanfarra IFAN</title>
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<main class="login-wrap">
-  <section class="login-card">
-    <h1>🎺 FANFARRA</h1>
-    <h2>Entrar no IFAN</h2>
-    <p class="login-help">Acesso para administradores e alunos da fanfarra.</p>
-    <form id="loginForm">
-      <label for="email">E-mail</label>
-      <input id="email" type="email" autocomplete="username" required>
-      <label for="senha">Senha</label>
-      <input id="senha" type="password" autocomplete="current-password" required>
-      <button id="entrar" type="submit">Entrar</button>
-      <div id="mensagem" class="login-msg" role="alert"></div>
-    </form>
-    <div class="login-cad">
-      <p class="login-help">Já tem login? Preencha os dados acima e clique em cadastrar.</p>
-      <button id="cadastrar" type="button" class="sec">Cadastrar</button>
-    </div>
-  </section>
+<body data-page="inicio">
+<div id="top"></div>
+<main id="conteudo" class="wrap">
+  <h2>Carregando sistema...</h2>
 </main>
+
+<!-- Scripts do Firebase v10 Compat -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script>
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const $ = id => document.getElementById(id);
-const msg = t => { $('mensagem').textContent = t || ''; };
-
-// Lista de e-mails administradores garantidos
-const adminsFixos = [
-  "administrativo945@gmail.com",
-  "claudiohenriquebr2008@gmail.com"
-];
-
-async function entrarCom(destino) {
-  const emailInput = $('email').value.trim().toLowerCase();
-  const senha = $('senha').value;
-  
-  if (!emailInput || !senha) { msg('Digite o e-mail e a senha.'); return; }
-  $('entrar').disabled = $('cadastrar').disabled = true; msg('');
-  
-  try {
-    await firebase.auth().signInWithEmailAndPassword(emailInput, senha);
-    location.replace(destino);
-  } catch (err) {
-    const bad = ['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found'];
-    msg(bad.includes(err.code) ? 'E-mail ou senha incorretos.'
-      : err.code === 'auth/too-many-requests' ? 'Muitas tentativas. Tente mais tarde.'
-      : 'Não foi possível entrar (' + (err.code || err.message) + ').');
-    $('entrar').disabled = $('cadastrar').disabled = false;
-  }
-}
-
-$('loginForm').addEventListener('submit', e => { e.preventDefault(); entrarCom('index.html'); });
-$('cadastrar').addEventListener('click', () => entrarCom('cadastrar-aluno.html'));
-</script>
+<script src="app.js"></script>
 </body>
 </html>
