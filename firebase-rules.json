@@ -1,12 +1,30 @@
 {
   "rules": {
-    "alunos": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
-    "instrumentos": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
-    "presencas": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
-    "avisos": { ".read": "auth != null", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
-    "eventos": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
-    "problemas": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'" },
-    "solicitacoesEventos": { "$id": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && (auth.token.email === 'ADMIN_EMAIL_AQUI' || (!data.exists() && newData.child('uid').val() === auth.uid))" } },
-    "solicitacoesProblemas": { "$id": { ".read": "auth != null && auth.token.email === 'ADMIN_EMAIL_AQUI'", ".write": "auth != null && (auth.token.email === 'ADMIN_EMAIL_AQUI' || (!data.exists() && newData.child('uid').val() === auth.uid))" } }
+    "papeis": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('papeis').child(auth.uid).val() === 'admin')",
+        ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'"
+      }
+    },
+    "alunos":       { ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
+    "instrumentos": { ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
+    "presencas":    { ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
+    "problemas":    { ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
+    "solicitacoesEventos": { ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
+    "avisos":  { ".read": "auth != null && root.child('papeis').child(auth.uid).exists()", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
+    "eventos": { ".read": "auth != null && root.child('papeis').child(auth.uid).exists()", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
+    "solicitacoesProblemas": {
+      "$id": {
+        ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'",
+        ".write": "auth != null && (root.child('papeis').child(auth.uid).val() === 'admin' || (root.child('papeis').child(auth.uid).exists() && !data.exists() && newData.child('uid').val() === auth.uid))"
+      }
+    },
+    "cadastrosAlunos": {
+      ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && (root.child('papeis').child(auth.uid).val() === 'admin' || (auth.uid === $uid && root.child('papeis').child(auth.uid).exists() && newData.child('uid').val() === auth.uid))"
+      }
+    }
   }
 }
