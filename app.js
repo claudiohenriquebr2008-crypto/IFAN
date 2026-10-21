@@ -1,5 +1,20 @@
 // app.js - Sistema IFAN Limpo e Sem Erros de Escape
 (function () {
+    
+let fbOk = false;
+
+try {
+  if (
+    typeof firebase !== "undefined" &&
+    window.firebaseConfig &&
+    firebase.apps.length > 0
+  ) {
+    fbOk = true;
+  }
+} catch (e) {
+  console.error("Erro ao verificar Firebase:", e);
+}
+
 "use strict";
 if (window.__IFAN_APP_LOADED__) return;
 window.__IFAN_APP_LOADED__ = true;
