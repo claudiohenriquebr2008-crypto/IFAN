@@ -35,12 +35,6 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const $ = id => document.getElementById(id);
 const msg = t => { $('mensagem').textContent = t || ''; };
 
-// Lista de e-mails administradores garantidos
-const adminsFixos = [
-  "administrativo945@gmail.com",
-  "claudiohenriquebr2008@gmail.com"
-];
-
 async function entrarCom(destino) {
   const emailInput = $('email').value.trim().toLowerCase();
   const senha = $('senha').value;
