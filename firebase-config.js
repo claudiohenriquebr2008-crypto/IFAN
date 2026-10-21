@@ -1,7 +1,9 @@
 
 (function () {
-  const config = {
-    apiKey: "SUA_API_KEY",
+  "use strict";
+
+  window.firebaseConfig = {
+    apiKey: "AIzaSyCYWeI3_iJOsyQQK6MKKfFmq_J7DiVRJVw",
     authDomain: "ifan-f8f19.firebaseapp.com",
     databaseURL: "https://ifan-f8f19-default-rtdb.firebaseio.com",
     projectId: "ifan-f8f19",
@@ -12,14 +14,11 @@
   };
 
   if (typeof firebase === "undefined") {
-    console.error("Firebase SDK não foi carregado.");
+    console.error("Firebase SDK não carregado.");
     return;
   }
 
   if (!firebase.apps.length) {
-    firebase.initializeApp(config);
+    firebase.initializeApp(window.firebaseConfig);
   }
-
-  window.db = firebase.database();
-  window.auth = firebase.auth();
 })();
