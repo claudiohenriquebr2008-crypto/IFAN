@@ -1,59 +1,83 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Entrar - Fanfarra</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrar - IFAN</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .login-wrap{max-width:420px;margin:8vh auto;padding:16px}
+    .login-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px}
+    .login-card h1{color:var(--gold);margin-top:0}
+    .login-card button{width:100%;margin-top:14px}
+    .login-msg{margin-top:12px;color:var(--bad);font-size:.9rem}
+    .login-help{color:var(--muted);font-size:.88rem}
+  </style>
 </head>
 <body>
-<main style="max-width:420px;margin:8vh auto">
-  <section class="card">
-    <h2 style="color:var(--gold)">🎺 FANFARRA</h2>
-    <form id="loginForm">
-      <label for="email">E-mail</label>
-      <input id="email" type="email" autocomplete="username" required>
-      <label for="senha">Senha</label>
-      <input id="senha" type="password" autocomplete="current-password" required>
-      <p><button id="entrar" type="submit">Entrar</button></p>
-      <div id="mensagem" style="color:var(--bad)" role="alert"></div>
-    </form>
-  </section>
-</main>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="firebase-config.js"></script>
-<script>
-firebase.initializeApp(firebaseConfig);
-firebase.auth().onAuthStateChanged(u => { if (u) location.replace('index.html'); });
-document.getElementById('loginForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const b = document.getElementById('entrar'), m = document.getElementById('mensagem');
-  b.disabled = true; m.textContent = '';
-  try {
-    await firebase.auth().signInWithEmailAndPassword(
-      document.getElementById('email').value.trim(),
-      document.getElementById('senha').value);
-    location.replace('index.html');
-  } catch (err) {
-    const bad = ['auth/invalid-credential','auth/wrong-password','auth/user-not-found'];
-    m.textContent = bad.includes(err.code) ? 'E-mail ou senha incorretos.'
-      : err.code === 'auth/too-many-requests' ? 'Muitas tentativas. Tente mais tarde.'
-      : 'Não foi possível entrar (' + err.code + '). Ative E-mail/senha no Firebase.';
-    b.disabled = false;
-  }
-});
-</script>
+  <main class="login-wrap">
+    <section class="login-card">
+      <h1>🎺 FANFARRA</h1>
+      <h2>Entrar no IFAN</h2>
+      <p class="login-help">O acesso ao site exige e-mail e senha cadastrados pelo administrador.</p>
+      <form id="loginForm">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="username" required>
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" autocomplete="current-password" required>
+        <button id="entrar" type="submit">Entrar</button>
+        <div id="mensagem" class="login-msg" role="alert" aria-live="polite"></div>
+      </form>
+    </section>
+  </main>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script>
+    (function () {
+      const form = document.getElementById('loginForm');
+      const botao = document.getElementById('entrar');
+      const mensagem = document.getElementById('mensagem');
+      if (!window.firebase || !window.IFAN_FIREBASE_CONFIG) {
+        mensagem.textContent = 'Não foi possível carregar o Firebase. Confira a conexão com a internet e o arquivo firebase-config.js.';
+        botao.disabled = true;
+        return;
+      }
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(window.IFAN_FIREBASE_CONFIG);
+      } catch (err) {
+        mensagem.textContent = 'Erro ao iniciar o Firebase. Atualize a página e tente novamente.';
+        botao.disabled = true;
+        return;
+      }
+      const auth = firebase.auth();
+      auth.onAuthStateChanged(function (usuario) {
+        if (usuario) window.location.replace('index.html');
+      });
+      form.addEventListener('submit', async function (evento) {
+        evento.preventDefault();
+        botao.disabled = true;
+        mensagem.textContent = '';
+        try {
+          await auth.signInWithEmailAndPassword(
+            document.getElementById('email').value.trim(),
+            document.getElementById('senha').value
+          );
+          window.location.replace('index.html');
+        } catch (erro) {
+          if (['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-email'].includes(erro.code)) {
+            mensagem.textContent = 'E-mail ou senha incorretos.';
+          } else if (erro.code === 'auth/too-many-requests') {
+            mensagem.textContent = 'Muitas tentativas. Tente novamente mais tarde.';
+          } else if (erro.code === 'auth/network-request-failed') {
+            mensagem.textContent = 'Falha de conexão. Confira a internet e tente novamente.';
+          } else {
+            mensagem.textContent = 'Não foi possível entrar. Confirme se o método E-mail/senha está ativado no Firebase Authentication.';
+          }
+          botao.disabled = false;
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Entrar - IFAN</title><link rel="stylesheet" href="style.css">
-<style>.login-wrap{max-width:420px;margin:8vh auto;padding:16px}.login-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px}.login-card h1{color:var(--gold);margin-top:0}.login-card button{width:100%;margin-top:14px}.login-msg{margin-top:12px;color:var(--bad);font-size:.9rem}.login-help{color:var(--muted);font-size:.88rem}</style>
-</head><body>
-<main class="login-wrap"><section class="login-card"><h1>🎺 FANFARRA</h1><h2>Entrar no IFAN</h2><p class="login-help">Use o e-mail e a senha cadastrados pelo administrador do Firebase.</p>
-<form id="loginForm"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required><button id="entrar" type="submit">Entrar</button><div id="mensagem" class="login-msg" role="alert"></div></form></section></main>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="firebase-config.js"></script><script>if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);firebase.auth().onAuthStateChanged(user=>{if(user)location.replace('index.html')});document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();const b=document.getElementById('entrar'),m=document.getElementById('mensagem');b.disabled=true;m.textContent='';try{await firebase.auth().signInWithEmailAndPassword(document.getElementById('email').value.trim(),document.getElementById('senha').value);location.replace('index.html')}catch(err){m.textContent=err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'?'E-mail ou senha incorretos.':err.code==='auth/too-many-requests'?'Muitas tentativas. Tente novamente mais tarde.':'Não foi possível entrar. Confira se o método E-mail/senha está ativado no Firebase.';b.disabled=false}});</script>
-</body></html>
