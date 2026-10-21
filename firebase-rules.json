@@ -1,30 +1,24 @@
 {
   "rules": {
-    "papeis": {
-      "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || root.child('papeis').child(auth.uid).val() === 'admin')",
-        ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'"
-      }
+    "alunos": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email === 'Administrativo945@gmail.com' || auth.token.email === 'claudiohenriquebr2008@gmail.com')"
     },
-    "alunos":       { ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
-    "instrumentos": { ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
-    "presencas":    { ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
-    "problemas":    { ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
-    "solicitacoesEventos": { ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
-    "avisos":  { ".read": "auth != null && root.child('papeis').child(auth.uid).exists()", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
-    "eventos": { ".read": "auth != null && root.child('papeis').child(auth.uid).exists()", ".write": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'" },
-    "solicitacoesProblemas": {
-      "$id": {
-        ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'",
-        ".write": "auth != null && (root.child('papeis').child(auth.uid).val() === 'admin' || (root.child('papeis').child(auth.uid).exists() && !data.exists() && newData.child('uid').val() === auth.uid))"
-      }
+    "instrumentos": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email === 'Administrativo945@gmail.com' || auth.token.email === 'claudiohenriquebr2008@gmail.com')"
     },
-    "cadastrosAlunos": {
-      ".read": "auth != null && root.child('papeis').child(auth.uid).val() === 'admin'",
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && (root.child('papeis').child(auth.uid).val() === 'admin' || (auth.uid === $uid && root.child('papeis').child(auth.uid).exists() && newData.child('uid').val() === auth.uid))"
-      }
+    "avisos": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email === 'Administrativo945@gmail.com' || auth.token.email === 'claudiohenriquebr2008@gmail.com')"
+    },
+    "eventos": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email === 'Administrativo945@gmail.com' || auth.token.email === 'claudiohenriquebr2008@gmail.com')"
+    },
+    "chamada": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email === 'Administrativo945@gmail.com' || auth.token.email === 'claudiohenriquebr2008@gmail.com')"
     }
   }
 }
