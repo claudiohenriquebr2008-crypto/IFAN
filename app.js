@@ -192,7 +192,7 @@ async function render() {
             </div>
             <p><button type="submit">Salvar instrumento</button></p>
           </form></div>
-        <div id="lista">${[...ins].sort((a, b) => String(a.tipo).localeCompare(String(b.tipo), "pt-BR") || a.numero - b.numero).map(i => {
+        <div id="lista">${[...ins].sort((a, b) => (Number(a.numero) || 0) - (Number(b.numero) || 0) || String(a.tipo).localeCompare(String(b.tipo), "pt-BR")).map(i => {
           const o = dono(i);
           return `<div class="item">
             <div class="main"><span class="num">${esc(i.numero)}</span><b>${esc(i.tipo)}</b> ${badge(i.condicao || "bom")}<br>
@@ -757,7 +757,8 @@ async function render() {
 
         <div id="lista">
           ${ins.sort((a, b) =>
-            a.tipo.localeCompare(b.tipo) || a.numero - b.numero
+            (Number(a.numero) || 0) - (Number(b.numero) || 0) ||
+            String(a.tipo || "").localeCompare(String(b.tipo || ""), "pt-BR")
           ).map(i => `
             <div class="item">
               <div class="main">
