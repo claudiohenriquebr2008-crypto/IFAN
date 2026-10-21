@@ -1,34 +1,45 @@
-// app.js - Sistema IFAN Limpo e Sem Erros de Escape
-(function () {
-    
-let fbOk = false;
 
-try {
-  if (
-    typeof firebase !== "undefined" &&
-    window.firebaseConfig &&
-    firebase.apps.length > 0
-  ) {
-    fbOk = true;
+ // app.js - Sistema IFAN
+(function () {
+  "use strict";
+
+  if (window.__IFAN_APP_LOADED__) return;
+  window.__IFAN_APP_LOADED__ = true;
+
+  let fbOk = false;
+
+  try {
+    if (typeof firebase !== "undefined") {
+      // O firebase-config.js deve ser carregado antes deste arquivo.
+      if (
+        !firebase.apps.length &&
+        window.firebaseConfig
+      ) {
+        firebase.initializeApp(window.firebaseConfig);
+      }
+
+      fbOk =
+        firebase.apps.length > 0 &&
+        typeof firebase.database === "function" &&
+        typeof firebase.auth === "function";
+    }
+  } catch (e) {
+    console.error("Erro ao inicializar Firebase:", e);
   }
-} catch (e) {
-  console.error("Erro ao verificar Firebase:", e);
-}
+
+  // O restante do código original começa aqui.
+
+(function () {
 
 "use strict";
 if (window.__IFAN_APP_LOADED__) return;
 window.__IFAN_APP_LOADED__ = true;
-
-const TIPOS = ["Caixa","Tarol","Bumbo","Surdo pequeno","Surdo médio","Surdo grande","Treme terra","Prato","Lira","Corneta","Fuzil","Repinique","Tamborim","Chocalho","Pandeiro","Agogô","Triângulo","Cuíca"];
-const ESTADOS = { bom: "Bom estado", mal: "Mal estado", desafinado: "Desafinado" };
-const PAGINAS = [
-    ["index.html","🏠 Início","inicio"],
-    ["chamada.html","📋 Chamada","chamada"],
-    ["alunos.html","👥 Alunos","alunos"],
-    ["instrumentos.html","🥁 Instrumentos","instrumentos"],
-    ["avisos.html","📣 Avisos","avisos"],
-    ["eventos.html","📅 Eventos","eventos"],
-    ["problemas.html","🔧 Problemas","problemas"]
+const TIPOS = [
+  "Caixa", "Tarol", "Bumbo", "Surdo pequeno",
+  "Surdo médio", "Surdo grande", "Treme terra",
+  "Prato", "Lira", "Corneta", "Fuzil",
+  "Repinique", "Tamborim", "Chocalho",
+  "Pandeiro", "Agogô", "Triângulo", "Cuíca"
 ];
 
 const administradoresAutorizados = [
