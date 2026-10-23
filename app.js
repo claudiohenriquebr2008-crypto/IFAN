@@ -482,31 +482,35 @@ function renderIndexAdmin() {
   const prox = S.eventos.filter(e => e.data >= hoje()).sort((a, b) => a.data.localeCompare(b.data))[0];
   const abertos = S.problemas.filter(x => x.status === "aberto").length;
   const livres = S.instrumentos.filter(i => i.condicao !== "defeito" && !alunoDe(i)).length;
-  const card = (h, t, n) =>
-    `<a class="stat" href="${h}.html"><small>${t}</small><b>${n}</b></a>`;
+  const card = (h, ic, t, n, sub) =>
+    `<a class="stat-card" href="${h}.html"><span class="stat-ic">${ic}</span><div><small>${t}</small><b>${n}</b>${sub ? `<em>${sub}</em>` : ""}</div></a>`;
+  const mods = [
+    ["chamada", "📋", "Chamada", "Presença em tempo real"],
+    ["alunos", "👥", "Alunos", "Cadastro e turmas"],
+    ["instrumentos", "🥁", "Instrumentos", "Números 1–46"],
+    ["avisos", "📢", "Avisos", "Comunicados"],
+    ["eventos", "📅", "Eventos", "Ensaios e shows"],
+    ["problemas", "🔧", "Problemas", abertos ? abertos + " abertos" : "Tudo ok"]
+  ];
   $("conteudo").innerHTML = `
-    <div class="stats">
-      ${card("alunos", "👥 Alunos", S.alunos.length)}
-      ${card("instrumentos", "🟢 Instr. livres", livres)}
-      ${card("problemas", "🔧 Abertos", abertos)}
-      ${card("eventos", "📅 Próximo", prox ? fmtData(prox.data).slice(0, 5) : "—")}
+    <section class="dash-hero">
+      <div>
+        <p class="dash-kicker">Painel do administrador</p>
+        <h2 class="dash-title">Controle da fanfarra</h2>
+        <p class="dash-sub">Chamada, instrumentos, avisos e problemas em um só lugar — sincronizado em tempo real.</p>
+      </div>
+      ${prox ? `<div class="dash-next"><span>Próximo evento</span><strong>${esc(prox.nome)}</strong><small>${fmtData(prox.data)}${prox.local ? " · " + esc(prox.local) : ""}</small></div>` : `<div class="dash-next muted"><span>Próximo evento</span><strong>Nenhum agendado</strong></div>`}
+    </section>
+    <div class="stats stats-rich">
+      ${card("alunos", "👥", "Alunos", S.alunos.length, "cadastrados")}
+      ${card("instrumentos", "🟢", "Livres", livres, "instrumentos")}
+      ${card("problemas", "🔧", "Problemas", abertos, "abertos")}
+      ${card("eventos", "📅", "Eventos", S.eventos.length, "no total")}
     </div>
-    ${
-      abertos
-        ? `<div class="card destaque-alerta"><strong>${abertos} problema(s) aberto(s)</strong> — <a href="problemas.html">Resolver agora</a></div>`
-        : ""
-    }
-    ${
-      prox
-        ? `<div class="card"><strong>📅 ${esc(prox.nome)}</strong> — ${fmtData(prox.data)}${
-            prox.local ? " · " + esc(prox.local) : ""
-          }</div>`
-        : ""
-    }
-    <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px">
-      ${NAV_ADMIN.slice(1)
-        .map(([f, l]) => `<a href="${f}.html"><button type="button" class="sec">${l}</button></a>`)
-        .join("")}
+    ${abertos ? `<div class="card destaque-alerta"><strong>${abertos} problema(s) aguardando</strong> — <a href="problemas.html">Resolver agora →</a></div>` : ""}
+    <h3 class="sec-title">Atalhos</h3>
+    <div class="mod-grid">
+      ${mods.map(([f, ic, t, d]) => `<a class="mod-card" href="${f}.html"><span>${ic}</span><strong>${t}</strong><small>${d}</small></a>`).join("")}
     </div>`;
 }
 
@@ -514,57 +518,34 @@ function renderIndexAluno() {
   const prox = S.eventos
     .filter(e => e.data >= hoje())
     .sort((a, b) => a.data.localeCompare(b.data))
-    .slice(0, 3);
-  const avisos = [...S.avisos].sort((a, b) => (b.criado || 0) - (a.criado || 0)).slice(0, 5);
+    .slice(0, 4);
+  const avisos = [...S.avisos].sort((a, b) => (b.criado || 0) - (a.criado || 0)).slice(0, 4);
   const meus = S.problemas.filter(x => x.autorUid === currentUser.uid);
   const meusAbertos = meus.filter(x => x.status === "aberto").length;
 
   $("conteudo").innerHTML = `
-    <div class="hero-aluno">
-      <h3>Olá! 👋</h3>
-      <p>Aqui você vê <strong>avisos</strong> e <strong>eventos</strong> da fanfarra e pode <strong>reportar problemas</strong> nos instrumentos.</p>
+    <section class="dash-hero aluno">
+      <div>
+        <p class="dash-kicker">Área do aluno</p>
+        <h2 class="dash-title">Olá! Bem-vindo à fanfarra</h2>
+        <p class="dash-sub">Veja avisos e eventos. Se algo no instrumento estiver errado, reporte um problema.</p>
+      </div>
+      <a class="dash-cta" href="problemas.html">➕ Reportar problema</a>
+    </section>
+    <div class="stats stats-rich">
+      <a class="stat-card" href="avisos.html"><span class="stat-ic">📢</span><div><small>Avisos</small><b>${S.avisos.length}</b></div></a>
+      <a class="stat-card" href="eventos.html"><span class="stat-ic">📅</span><div><small>Eventos</small><b>${S.eventos.length}</b></div></a>
+      <a class="stat-card" href="problemas.html"><span class="stat-ic">🔧</span><div><small>Meus abertos</small><b>${meusAbertos}</b></div></a>
     </div>
-    <div class="stats">
-      <a class="stat" href="avisos.html"><small>📢 Avisos</small><b>${S.avisos.length}</b></a>
-      <a class="stat" href="eventos.html"><small>📅 Eventos</small><b>${S.eventos.length}</b></a>
-      <a class="stat" href="problemas.html"><small>🔧 Meus abertos</small><b>${meusAbertos}</b></a>
-    </div>
-    <div class="card">
-      <h3 style="margin-top:0;color:var(--gold)">📅 Próximos eventos</h3>
-      ${
-        prox.length
-          ? prox
-              .map(
-                e =>
-                  `<div class="item"><div class="main"><strong>${esc(e.nome)}</strong><br><small>${fmtData(
-                    e.data
-                  )}${e.local ? " · " + esc(e.local) : ""}${e.obs ? " · " + esc(e.obs) : ""}</small></div></div>`
-              )
-              .join("")
-          : `<p class="empty">Nenhum evento futuro cadastrado.</p>`
-      }
-      <p><a href="eventos.html">Ver todos os eventos →</a></p>
-    </div>
-    <div class="card">
-      <h3 style="margin-top:0;color:var(--gold)">📢 Últimos avisos</h3>
-      ${
-        avisos.length
-          ? avisos
-              .map(
-                a =>
-                  `<div class="item"><div class="main"><small>${fmtData(
-                    a.data
-                  )}</small><br><span style="white-space:pre-wrap">${esc(a.texto)}</span></div></div>`
-              )
-              .join("")
-          : `<p class="empty">Nenhum aviso ainda.</p>`
-      }
-      <p><a href="avisos.html">Ver todos os avisos →</a></p>
-    </div>
-    <div class="card">
-      <h3 style="margin-top:0;color:var(--gold)">🔧 Problemas</h3>
-      <p class="login-help">Viu algo errado no instrumento? Reporte aqui. O administrador analisa e resolve.</p>
-      <a href="problemas.html"><button type="button">➕ Reportar problema</button></a>
+    <div class="two-col">
+      <div class="card panel">
+        <div class="panel-head"><h3>📅 Próximos eventos</h3><a href="eventos.html">Ver todos</a></div>
+        ${prox.length ? prox.map(e => `<div class="timeline-item"><div class="tl-date">${fmtData(e.data)}</div><div><strong>${esc(e.nome)}</strong><small>${e.local ? esc(e.local) : "Local a definir"}${e.obs ? " · " + esc(e.obs) : ""}</small></div></div>`).join("") : `<p class="empty">Nenhum evento futuro.</p>`}
+      </div>
+      <div class="card panel">
+        <div class="panel-head"><h3>📢 Últimos avisos</h3><a href="avisos.html">Ver todos</a></div>
+        ${avisos.length ? avisos.map(a => `<div class="aviso-item"><small>${fmtData(a.data)}</small><p>${esc(a.texto)}</p></div>`).join("") : `<p class="empty">Nenhum aviso ainda.</p>`}
+      </div>
     </div>`;
 }
 
