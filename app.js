@@ -43,14 +43,14 @@ const instNome = id => {
   const i = byId("instrumentos", id);
   return i ? `${esc(i.tipo)} nº ${esc(i.numero)}` : "—";
 };
-/* Tipo A→Z, depois número 1, 2, 10… (ordem numérica, não alfabética) */
+/* Ordem numérica 1 → 46 (depois tipo se empatar) */
 const numInst = n => {
   const x = parseInt(String(n ?? "").replace(/\D/g, ""), 10);
   return Number.isFinite(x) ? x : 0;
 };
 const ordInst = (a, b) =>
-  String(a.tipo || "").localeCompare(String(b.tipo || ""), "pt") ||
   numInst(a.numero) - numInst(b.numero) ||
+  String(a.tipo || "").localeCompare(String(b.tipo || ""), "pt") ||
   String(a.numero).localeCompare(String(b.numero), "pt", { numeric: true });
 const badge = (cls, t) => `<span class="b ${cls}">${t}</span>`;
 const idnovo = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -195,9 +195,13 @@ const P = {
     render() {
       if (!$("cTab")) {
         $("conteudo").innerHTML = `
-          <div class="row" style="margin-bottom:12px">
+          <div class="row" style="margin-bottom:12px;align-items:flex-end">
             <div><label for="data">Data</label><input type="date" id="data" value="${hoje()}"></div>
-            <div style="align-self:end"><span id="chamStatus" class="login-help">● ao vivo</span></div>
+            <div class="relogio-box">
+              <div class="relogio-hora" id="relogioHora">--:--:--</div>
+              <div class="relogio-sub">⏱ Tempo da chamada: <strong id="relogioDecorrido">00:00:00</strong></div>
+              <div><span id="chamStatus" class="login-help">● tempo real</span></div>
+            </div>
           </div>
           <div class="stats">
             <div class="stat"><small>👥 Total</small><b id="nT">0</b></div>
@@ -207,6 +211,7 @@ const P = {
           <div id="cTab"></div>`;
         $("data").onchange = () => {
           dr = { data: "", m: {}, local: {} };
+          inicioChamada = Date.now();
           P.chamada.render();
         };
         $("cTab").onclick = e => {
@@ -227,6 +232,7 @@ const P = {
           dr.local[a] = Date.now();
           agendarObs(a); // debounced
         };
+        iniciarRelogioChamada();
       }
       const data = $("data").value || ($("data").value = hoje());
       const focused = document.activeElement?.dataset?.o;
@@ -425,9 +431,38 @@ const P = {
 /* map data-page */
 P.inicio = P.index;
 
-/* ---------- Chamada helpers (tempo real) ---------- */
+/* ---------- Chamada helpers (tempo real + relógio) ---------- */
 let dr = { data: "", m: {}, local: {} };
 const obsTimers = {};
+let inicioChamada = Date.now();
+let relogioTimer = null;
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+function fmtHora(d) {
+  return pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+}
+function fmtDecorrido(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return pad2(h) + ":" + pad2(m) + ":" + pad2(sec);
+}
+function tickRelogio() {
+  const agora = new Date();
+  const h = $("relogioHora");
+  const d = $("relogioDecorrido");
+  if (h) h.textContent = fmtHora(agora);
+  if (d) d.textContent = fmtDecorrido(agora.getTime() - inicioChamada);
+}
+function iniciarRelogioChamada() {
+  if (!inicioChamada) inicioChamada = Date.now();
+  tickRelogio();
+  if (relogioTimer) clearInterval(relogioTimer);
+  relogioTimer = setInterval(tickRelogio, 1000);
+}
 
 function pintaBtn(b, p) {
   b.className = "presenca-btn " + (p ? "ok" : "del");
