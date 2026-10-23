@@ -95,3 +95,28 @@ input[type=text].obs{margin-top:6px;padding:6px 8px;font-size:.85rem}
 .login-msg{margin-top:12px;color:var(--bad);font-size:.9rem;min-height:1.2em}
 .login-help{color:var(--muted);font-size:.88rem}
 .login-cad{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+
+/* --- extras login / modal / flash --- */
+.page-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;margin:16px auto 8px;max-width:900px;padding:0 16px}
+.page-head h2{margin:0}
+.wrap,.conteudo{max-width:900px;margin:0 auto;padding:16px}
+.alert{border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:.9rem}
+.alert.ok{background:#14532d;color:#86efac}
+.alert.warn{background:#78350f;color:#fde68a}
+.alert.mal{background:#7f1d1d;color:#fca5a5}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.modal-bg.hide{display:none}
+.modal-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
+.modal-card h3{margin:0 0 8px;color:var(--gold)}
+#flash{position:fixed;bottom:20px;right:20px;z-index:1100}
+.flash-ok{background:#198754;color:#fff;padding:12px 18px;border-radius:10px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+button.ok{background:#198754;color:#fff}
+button.presenca-btn{min-width:110px}
+button.on,button.sec.on{background:var(--gold);color:#111;font-weight:700}
+.empty{color:var(--muted);text-align:center;padding:24px 8px}
+a{color:var(--gold)}
+nav a#btnSair, #btnSair{color:var(--bad)!important}
+.stat small{display:block;color:var(--muted);font-size:.8rem}
+.stat b{font-size:1.4rem}
+.stat{text-decoration:none;color:inherit}
+input.obs{width:auto}
