@@ -1,24 +1,6 @@
 {
   "rules": {
-    "alunos": {
-      ".read": "auth != null",
-      ".write": "auth != null && (auth.token.email === 'Administrativo945@gmail.com' || auth.token.email === 'claudiohenriquebr2008@gmail.com')"
-    },
-    "instrumentos": {
-      ".read": "auth != null",
-      ".write": "auth != null && (auth.token.email === 'Administrativo945@gmail.com' || auth.token.email === 'claudiohenriquebr2008@gmail.com')"
-    },
-    "avisos": {
-      ".read": "auth != null",
-      ".write": "auth != null && (auth.token.email === 'Administrativo945@gmail.com' || auth.token.email === 'claudiohenriquebr2008@gmail.com')"
-    },
-    "eventos": {
-      ".read": "auth != null",
-      ".write": "auth != null && (auth.token.email === 'Administrativo945@gmail.com' || auth.token.email === 'claudiohenriquebr2008@gmail.com')"
-    },
-    "chamada": {
-      ".read": "auth != null",
-      ".write": "auth != null && (auth.token.email === 'Administrativo945@gmail.com' || auth.token.email === 'claudiohenriquebr2008@gmail.com')"
-    }
+    ".read": "auth != null",
+    ".write": "auth != null"
   }
 }
