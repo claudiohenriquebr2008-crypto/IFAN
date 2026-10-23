@@ -1,153 +1,20 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Instrumentos - Fanfarra</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instrumentos — Fanfarra IFAN</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="instrumentos">
-<header id="top"></header>
-<main id="conteudo"><p class="empty">Carregando...</p></main>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
-<script src="app.js"></script>
+  <header id="top"></header>
+  <main id="conteudo" class="wrap">
+    <p class="empty">Carregando...</p>
+  </main>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Instrumentos - Fanfarra</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body data-page="instrumentos">
-<header id="top"></header>
-<main id="conteudo"></main>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
-<script>if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);</script>
-<script src="app.js"></script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Instrumentos - Fanfarra</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body data-page="instrumentos">
-<header id="top"></header>
-<main id="conteudo"></main>
-<script src="firebase-config.js"></script>
-<script src="app.js"></script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Instrumentos - Fanfarra</title><link rel="stylesheet" href="style.css"></head>
-<body><header id="top"></header><main>
-<h2>Instrumentos</h2>
-<div class="stats" id="stats"></div>
-<div class="card"><div class="row">
-<select id="fTipo"></select>
-<select id="fEstado"><option value="">Todos os estados</option><option value="bom">Bom estado</option><option value="mal">Mal estado</option><option value="desafinado">Desafinado</option></select>
-<select id="fStatus"><option value="">Todos</option><option value="uso">Em uso</option><option value="livre">Disponíveis</option></select>
-</div></div>
-<div id="lista"></div>
-</main><script src="firebase-config.js"></script><script src="app.js"></script><script>"use strict";
-renderHeader("instrumentos");
-let ins=[],al=[];
-async function load(){
- try{[ins,al]=await Promise.all([DB.list("instrumentos"),DB.list("alunos")]);}catch(e){return erroCarga("lista",e);}
- const cur=$("fTipo").value;
- const tipos=[...new Set(ins.map(i=>i.tipo))].sort(ordem);
- $("fTipo").innerHTML='<option value="">Todos os instrumentos</option>'+tipos.map(t=>`<option ${t===cur?"selected":""}>${esc(t)}</option>`).join("");
- draw();
-}
-const dono=id=>al.find(a=>a.instrumentoId===id);
-function draw(){
- const ft=$("fTipo").value,fe=$("fEstado").value,fs=$("fStatus").value;
- const livres=ins.filter(i=>!dono(i.id)).length;
- $("stats").innerHTML=[[ins.length,"Total"],[ins.length-livres,"Em uso"],[livres,"Disponíveis"],[ins.filter(i=>cond(i)==="mal").length,"Mal estado"],[ins.filter(i=>cond(i)==="desafinado").length,"Desafinados"]].map(s=>`<div class="stat"><b>${s[0]}</b>${s[1]}</div>`).join("");
- const lista=ins.filter(i=>(!ft||i.tipo===ft)&&(!fe||cond(i)===fe)&&(!fs||(fs==="uso")===!!dono(i.id))).sort(ordInst);
- $("lista").innerHTML=lista.length?lista.map(i=>{
-  const a=dono(i.id);
-  return `<div class="item"><div class="main"><span class="num">${esc(i.numero)}</span><b>${esc(i.tipo)}</b> ${badge(cond(i))}<br>
-  <small>${a?`Aluno: <b>${esc(a.nome)}</b> · Sala <span class="sala">${esc(a.turma)}</span>`:'<span class="b livre">Disponível</span>'}</small></div>
-  <div><select style="width:auto" data-a="estado" data-id="${esc(i.id)}">${Object.entries(ESTADOS).map(([k,v])=>`<option value="${k}" ${k===cond(i)?"selected":""}>${v}</option>`).join("")}</select>
-  ${a?"":`<button class="del" data-a="del" data-id="${esc(i.id)}">Excluir</button>`}</div></div>`;
- }).join(""):'<div class="empty">Nenhum instrumento encontrado.</div>';
-}
-["fTipo","fEstado","fStatus"].forEach(id=>$(id).onchange=draw);
-delegar($("lista"),"change",{estado:(id,b)=>run(async()=>{
- const i=ins.find(x=>x.id===id); const novo=await DB.put("instrumentos",{...i,condicao:b.value});
- ins=ins.map(x=>x.id===id?novo:x); draw();
-},"Estado atualizado")});
-delegar($("lista"),"click",{del:id=>run(async()=>{
- if(dono(id)) throw new Error("Instrumento em uso por um aluno.");
- if(!confirm("Excluir este instrumento?")) return;
- await DB.del("instrumentos",id); await load();
-},"Excluído")});
-load();
-  <!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cadastrar instrumento - Fanfarra</title><link rel="stylesheet" href="style.css"></head>
-<body><header id="top"></header><main>
-<h2>Cadastrar instrumento disponível</h2>
-<div class="card">
-<div class="row">
-<div><label>Instrumento</label><select id="tipo"></select></div>
-<div id="outroBox" class="hide"><label>Nome do instrumento</label><input id="outro" placeholder="Ex.: Clarinete"></div>
-<div><label>Número</label><input id="numero" type="number" min="1" inputmode="numeric"></div>
-<div><label>Estado</label><select id="estado"></select></div>
-</div>
-<p><button id="salvar">Salvar instrumento</button></p>
-</div>
-<h3>Instrumentos disponíveis (sem aluno)</h3>
-<div id="lista"></div>
-</main><script src="firebase-config.js"></script><script src="app.js"></script><script>"use strict";
-renderHeader("cadinst");
-let ins=[],al=[];
-$("tipo").innerHTML=TIPOS.map(t=>`<option>${t}</option>`).join("")+'<option value="__outro">Outro...</option>';
-$("estado").innerHTML=Object.entries(ESTADOS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
-const tipoAtual=()=>$("tipo").value==="__outro"?$("outro").value.trim():$("tipo").value;
-function sugerir(){
- $("outroBox").classList.toggle("hide",$("tipo").value!=="__outro");
- const t=tipoAtual().toLowerCase(); const nums=ins.filter(i=>String(i.tipo).toLowerCase()===t).map(i=>+i.numero||0);
- $("numero").value=(nums.length?Math.max(...nums):0)+1;
-}
-$("tipo").onchange=sugerir; $("outro").oninput=sugerir;
-async function load(){
- try{[ins,al]=await Promise.all([DB.list("instrumentos"),DB.list("alunos")]);}catch(e){return erroCarga("lista",e);}
- sugerir(); draw();
-}
-function draw(){
- const usados=new Set(al.map(a=>a.instrumentoId));
- const livres=ins.filter(i=>!usados.has(i.id)).sort(ordInst);
- $("lista").innerHTML=livres.length?livres.map(i=>`<div class="item"><div class="main"><span class="num">${esc(i.numero)}</span><b>${esc(i.tipo)}</b> ${badge(cond(i))}</div><button class="del" data-a="del" data-id="${esc(i.id)}">Excluir</button></div>`).join(""):'<div class="empty">Nenhum instrumento disponível.</div>';
-}
-$("salvar").onclick=()=>run(async()=>{
- const t=tipoAtual(), n=parseInt($("numero").value,10);
- if(!t) throw new Error("Informe o nome do instrumento.");
- if(!n||n<1) throw new Error("Informe o número do instrumento.");
- ins=await DB.list("instrumentos");
- if(ins.some(i=>String(i.tipo).toLowerCase()===t.toLowerCase()&&+i.numero===n)) throw new Error(`Já existe ${t} nº ${n}.`);
- await DB.put("instrumentos",{tipo:t,numero:n,condicao:$("estado").value});
- $("outro").value=""; await load();
-},"Instrumento salvo!");
-delegar($("lista"),"click",{del:id=>run(async()=>{
- if(al.some(a=>a.instrumentoId===id)) throw new Error("Instrumento em uso por um aluno.");
- if(!confirm("Excluir este instrumento?")) return;
- await DB.del("instrumentos",id); await load();
-},"Excluído")});
-load();
-</script></body></html>
-</script></body></html>
