@@ -754,7 +754,7 @@ function shell() {
   const top = $("top");
   if (top) {
     top.innerHTML = `
-      <h1>🎺 FANFARRA <small style="font-weight:400;color:var(--muted);font-size:.75rem">${esc(
+      <h1><img class="logo-mini" src="logo-fanfarra.png" alt=""> FANFARRA IFMT <small>${esc(
         currentUser.email || ""
       )} · ${isAdmin ? "Admin" : "Aluno"}</small></h1>
       <nav>
