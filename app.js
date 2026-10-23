@@ -43,7 +43,15 @@ const instNome = id => {
   const i = byId("instrumentos", id);
   return i ? `${esc(i.tipo)} nº ${esc(i.numero)}` : "—";
 };
-const ordInst = (a, b) => a.tipo.localeCompare(b.tipo, "pt") || Number(a.numero) - Number(b.numero);
+/* Tipo A→Z, depois número 1, 2, 10… (ordem numérica, não alfabética) */
+const numInst = n => {
+  const x = parseInt(String(n ?? "").replace(/\D/g, ""), 10);
+  return Number.isFinite(x) ? x : 0;
+};
+const ordInst = (a, b) =>
+  String(a.tipo || "").localeCompare(String(b.tipo || ""), "pt") ||
+  numInst(a.numero) - numInst(b.numero) ||
+  String(a.numero).localeCompare(String(b.numero), "pt", { numeric: true });
 const badge = (cls, t) => `<span class="b ${cls}">${t}</span>`;
 const idnovo = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -62,7 +70,7 @@ try {
   erroInit = e.message;
 }
 
-/* ---------- DB (só com usuário logado) ---------- */
+/* ---------- DB (só com usuário logado) — tempo real via .on("value") ---------- */
 const DB = {
   watch(c, cb) {
     if (!fb || !currentUser) return;
@@ -83,6 +91,11 @@ const DB = {
       u[id || fb.ref(c).push().key] = d;
     });
     return fb.ref(c).update(u);
+  },
+  /** Grava 1 registro na hora (chamada em tempo real) */
+  async set(c, id, data) {
+    if (!fb || !currentUser) throw new Error("Não autenticado");
+    return fb.ref(c + "/" + id).set(data);
   },
   async del(c, id) {
     if (!fb || !currentUser) throw new Error("Não autenticado");
@@ -178,58 +191,97 @@ const P = {
 
   chamada: {
     t: "📋 Chamada",
-    s: "Controle a presença dos integrantes.",
+    s: "Presença em tempo real — cada clique já grava no Firebase.",
     render() {
       if (!$("cTab")) {
         $("conteudo").innerHTML = `
           <div class="row" style="margin-bottom:12px">
             <div><label for="data">Data</label><input type="date" id="data" value="${hoje()}"></div>
+            <div style="align-self:end"><span id="chamStatus" class="login-help">● ao vivo</span></div>
           </div>
           <div class="stats">
             <div class="stat"><small>👥 Total</small><b id="nT">0</b></div>
             <div class="stat"><small>🟢 Presentes</small><b id="nP">0</b></div>
             <div class="stat"><small>🔴 Faltas</small><b id="nF">0</b></div>
           </div>
-          <div id="cTab"></div>
-          <p style="margin-top:12px"><button type="button" id="bCham">💾 Salvar chamada</button></p>`;
-        $("data").onchange = () => P.chamada.render();
-        $("bCham").onclick = salvarChamada;
+          <div id="cTab"></div>`;
+        $("data").onchange = () => {
+          dr = { data: "", m: {}, local: {} };
+          P.chamada.render();
+        };
         $("cTab").onclick = e => {
           const b = e.target.closest("[data-p]");
           if (!b) return;
-          const d = dr.m[b.dataset.p] || (dr.m[b.dataset.p] = { p: false, o: "" });
+          const id = b.dataset.p;
+          const d = dr.m[id] || (dr.m[id] = { p: false, o: "" });
           d.p = !d.p;
-          dr.sujo = true;
+          dr.local[id] = Date.now();
           pintaBtn(b, d.p);
           contar();
+          salvarAlunoChamada(id); // tempo real
         };
         $("cTab").oninput = e => {
           const a = e.target.dataset.o;
           if (!a) return;
           (dr.m[a] || (dr.m[a] = { p: false, o: "" })).o = e.target.value;
-          dr.sujo = true;
+          dr.local[a] = Date.now();
+          agendarObs(a); // debounced
         };
       }
       const data = $("data").value || ($("data").value = hoje());
-      if (dr.data !== data || !dr.sujo) {
-        dr = { data, m: {}, sujo: false };
-        S.chamadas.filter(c => c.data === data).forEach(c => {
-          dr.m[c.alunoId] = { p: !!c.presente, o: c.observacao || "" };
-        });
+      const focused = document.activeElement?.dataset?.o;
+
+      // Mescla dados do Firebase; não sobrescreve o que o usuário acabou de editar
+      if (dr.data !== data) {
+        dr = { data, m: {}, local: {} };
       }
+      S.chamadas.filter(c => c.data === data).forEach(c => {
+        const recent = dr.local[c.alunoId] && Date.now() - dr.local[c.alunoId] < 2500;
+        if (recent) return; // mantém edição local recente
+        dr.m[c.alunoId] = { p: !!c.presente, o: c.observacao || "" };
+      });
+
       const al = [...S.alunos].sort((a, b) => a.nome.localeCompare(b.nome, "pt"));
-      $("cTab").innerHTML =
-        al
-          .map(a => {
-            const d = dr.m[a.id] || { p: false, o: "" };
-            return `<div class="item">
+      const idsAgora = al.map(a => a.id).join(",");
+      const precisaRebuild = $("cTab").dataset.ids !== idsAgora || !$("cTab").dataset.built;
+
+      if (precisaRebuild) {
+        $("cTab").innerHTML =
+          al
+            .map(a => {
+              const d = dr.m[a.id] || { p: false, o: "" };
+              return `<div class="item" data-aluno="${a.id}">
               <div class="main"><strong>${esc(a.nome)}</strong><br><small>${esc(a.turma)} · ${instNome(a.instrumentoId)}</small></div>
               <button type="button" class="presenca-btn ${d.p ? "ok" : "del"}" data-p="${a.id}">${d.p ? "🟢 Presente" : "🔴 Falta"}</button>
               <input class="obs" data-o="${a.id}" value="${esc(d.o)}" placeholder="Obs." style="flex:1 1 120px;max-width:200px">
             </div>`;
-          })
-          .join("") || `<p class="empty">Nenhum aluno. Cadastre em <a href="alunos.html">Alunos</a>.</p>`;
+            })
+            .join("") || `<p class="empty">Nenhum aluno. Cadastre em <a href="alunos.html">Alunos</a>.</p>`;
+        $("cTab").dataset.built = "1";
+        $("cTab").dataset.ids = idsAgora;
+      } else {
+        // Só sincroniza botões/obs (tempo real sem piscar a lista)
+        al.forEach(a => {
+          const row = $("cTab").querySelector(`[data-aluno="${a.id}"]`);
+          if (!row) return;
+          const d = dr.m[a.id] || { p: false, o: "" };
+          const btn = row.querySelector("[data-p]");
+          if (btn) pintaBtn(btn, d.p);
+          const inp = row.querySelector("[data-o]");
+          if (inp && document.activeElement !== inp) inp.value = d.o || "";
+        });
+      }
+      if (focused) {
+        const el = $("cTab").querySelector(`[data-o="${focused}"]`);
+        if (el) {
+          el.focus();
+          try {
+            el.selectionStart = el.selectionEnd = el.value.length;
+          } catch (_) {}
+        }
+      }
       contar();
+      setChamStatus("● tempo real", true);
     }
   },
 
@@ -268,10 +320,18 @@ const P = {
         ]
       }
     ],
-    valida: o =>
-      S.instrumentos.some(x => x.id !== o.id && x.tipo === o.tipo && +x.numero === +o.numero)
+    valida: o => {
+      o.numero = numInst(o.numero) || o.numero;
+      return S.instrumentos.some(
+        x => x.id !== o.id && x.tipo === o.tipo && numInst(x.numero) === numInst(o.numero)
+      )
         ? "Esse instrumento já está cadastrado."
-        : "",
+        : "";
+    },
+    antes: o => {
+      const n = numInst(o.numero);
+      if (n) o.numero = n;
+    },
     podeExcluir: r =>
       alunoDe(r) ? `Em uso por ${alunoDe(r).nome}. Retire do aluno antes de excluir.` : "",
     filtros: [
@@ -365,8 +425,10 @@ const P = {
 /* map data-page */
 P.inicio = P.index;
 
-/* ---------- Chamada helpers ---------- */
-let dr = { data: "", m: {}, sujo: false };
+/* ---------- Chamada helpers (tempo real) ---------- */
+let dr = { data: "", m: {}, local: {} };
+const obsTimers = {};
+
 function pintaBtn(b, p) {
   b.className = "presenca-btn " + (p ? "ok" : "del");
   b.textContent = p ? "🟢 Presente" : "🔴 Falta";
@@ -378,27 +440,42 @@ function contar() {
   if ($("nP")) $("nP").textContent = p;
   if ($("nF")) $("nF").textContent = t - p;
 }
-async function salvarChamada() {
-  const data = $("data").value;
-  if (!data) return alert("Selecione a data.");
-  if (!S.alunos.length) return alert("Cadastre alunos primeiro.");
-  const itens = S.alunos.map(a => {
-    const d = dr.m[a.id] || { p: false, o: "" };
-    return {
-      id: `${data}_${a.id}`,
-      data,
-      alunoId: a.id,
-      presente: d.p,
-      observacao: (d.o || "").trim()
-    };
-  });
+function setChamStatus(txt, ok) {
+  const el = $("chamStatus");
+  if (!el) return;
+  el.textContent = txt;
+  el.style.color = ok === false ? "var(--bad)" : ok ? "var(--ok)" : "var(--muted)";
+}
+
+async function salvarAlunoChamada(alunoId) {
+  const data = $("data")?.value;
+  if (!data || !alunoId) return;
+  const d = dr.m[alunoId] || { p: false, o: "" };
+  const id = `${data}_${alunoId}`;
+  const payload = {
+    data,
+    alunoId,
+    presente: !!d.p,
+    observacao: (d.o || "").trim(),
+    atualizado: Date.now(),
+    por: (currentUser && currentUser.email) || ""
+  };
+  setChamStatus("☁ salvando…");
   try {
-    await DB.put("chamadas", itens);
-    dr.sujo = false;
-    flash("✅ Chamada salva!");
+    // .set grava na hora e o .on("value") dos outros aparelhos dispara na sequência
+    await DB.set("chamadas", id, payload);
+    setChamStatus("● tempo real", true);
   } catch (e) {
+    setChamStatus("✗ erro ao salvar", false);
+    console.error(e);
     falha(e);
   }
+}
+
+function agendarObs(alunoId) {
+  clearTimeout(obsTimers[alunoId]);
+  setChamStatus("digitando…");
+  obsTimers[alunoId] = setTimeout(() => salvarAlunoChamada(alunoId), 350);
 }
 
 /* ---------- Lista genérica ---------- */
@@ -588,14 +665,19 @@ function iniciarApp() {
   p = P[page] || P.index;
   if (p.filtros) filtro = p.filtros[0][0];
   shell();
+  let pronto = false;
+  function redesenhar(origem) {
+    if (!pronto && OK.size < COLS.length) return;
+    pronto = true;
+    // Qualquer mudança no Firebase redesenha a tela atual (tempo real)
+    if (p.render) p.render();
+    else renderLista();
+  }
   COLS.forEach(c =>
     DB.watch(c, a => {
       S[c] = a;
       OK.add(c);
-      if (OK.size === COLS.length) {
-        if (p.render) p.render();
-        else renderLista();
-      }
+      redesenhar(c);
     })
   );
 }
