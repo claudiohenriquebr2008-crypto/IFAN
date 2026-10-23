@@ -1,23 +1,65 @@
-# IFAN — Fanfarra (login por perfil)
+# IFAN — Sistema da Fanfarra (com login)
 
-## Quem entra
-Só entra quem tem **login no Firebase Authentication** E um perfil em `papeis/<UID>` no Realtime Database:
-- `"admin"`: vê e mexe em tudo (chamada, alunos, instrumentos, avisos, eventos, problemas).
-- `"aluno"`: vê avisos e eventos, e relata problemas (o relato é privado). Só isso.
+## O que este pacote corrige
+- `app.js` completo (o do site estava truncado)
+- Páginas HTML sem conteúdo duplicado
+- Login com Firebase Authentication (e-mail/senha)
+- Regras do Realtime Database exigindo usuário logado
 
-Quem tem login mas não tem perfil é desconectado e vê "não está cadastrado".
+## Regras do Firebase (cole e publique)
 
-## Passo a passo
-1. Firebase → Authentication → ative **E-mail/senha** e crie os usuários (admins e alunos). Copie o **UID** de cada um.
-2. Realtime Database → Dados: crie `papeis` → `<UID>` com o valor `admin` ou `aluno`. Comece pelo seu usuário (admin).
-3. Realtime Database → Regras: cole o `firebase-rules.json` e publique.
-4. Envie os arquivos para o GitHub e espere a Vercel publicar.
+No console: **Realtime Database → Regras**
 
-## Botão Cadastrar (embaixo do login)
-O aluno que já tem login digita e-mail e senha e clica **Cadastrar**. Ele entra e preenche nome, sala e número. O admin vê em **Alunos → Cadastros recebidos** e clica **Aprovar**.
+```json
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null"
+  }
+}
+```
 
-## Mudou em relação à versão anterior
-- Sem `ADMIN_EMAIL`: os admins agora são os usuários com `papeis/<UID> = admin` (pode ter vários).
-- Aluno vê eventos, mas não envia mais sugestão de evento.
-- Linha dourada do cabeçalho removida; botões **+ Aluno** e **+ Instrumento** só para admin.
-- Login e páginas estavam duplicados dentro do mesmo arquivo; agora cada arquivo tem um só.
+Arquivo pronto: `firebase-rules.json`.
+
+## Authentication
+
+1. Firebase Console → **Authentication** → **Sign-in method**
+2. Ative **E-mail/senha**
+3. Em **Users**, crie os usuários (ou use o botão **Cadastrar** na tela de login)
+
+Admins (veem o badge “Administrador” no app):
+
+- `administrativo945@gmail.com`
+- `claudiohenriquebr2008@gmail.com`
+
+(Outros e-mails entram normalmente; só o rótulo muda. Com as regras acima, qualquer conta autenticada pode ler e escrever.)
+
+## Deploy (Vercel / Netlify / GitHub)
+
+1. Apague os arquivos antigos do projeto.
+2. Envie **todos** os arquivos desta pasta.
+3. Publique as regras no Firebase (passo acima).
+4. Abra o site → deve cair em `login.html`.
+
+## Arquivos
+
+| Arquivo | Função |
+|---------|--------|
+| login.html | Entrar / cadastrar |
+| index.html | Painel |
+| chamada.html | Presença |
+| alunos.html | Alunos |
+| instrumentos.html | Instrumentos |
+| avisos.html | Avisos |
+| eventos.html | Eventos |
+| problemas.html | Problemas |
+| app.js | Lógica |
+| firebase-config.js | Projeto `ifan-f8f19` |
+| firebase-rules.json | Regras `auth != null` |
+| style.css | Tema escuro |
+
+## Fluxo
+1. Usuário abre qualquer página → se não estiver logado, vai para `login.html`.
+2. Entra com e-mail/senha (ou cadastra).
+3. Firebase Auth libera o Realtime Database (regras `auth != null`).
+4. Dados sincronizam entre aparelhos.
