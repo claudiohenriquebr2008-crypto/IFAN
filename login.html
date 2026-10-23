@@ -6,26 +6,41 @@
   <title>Entrar — Fanfarra IFAN</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <main class="login-wrap">
-    <section class="login-card">
-      <h1>🎺 FANFARRA</h1>
-      <h2>Entrar no IFAN</h2>
-      <p class="login-help">Admin: gerencia tudo. Aluno: vê avisos e eventos e reporta problemas.</p>
-      <form id="loginForm">
-        <label for="email">E-mail</label>
-        <input id="email" type="email" autocomplete="username" required>
-        <label for="senha">Senha</label>
-        <input id="senha" type="password" autocomplete="current-password" required>
-        <button id="entrar" type="submit">Entrar</button>
-        <div id="mensagem" class="login-msg" role="alert"></div>
-      </form>
-      <div class="login-cad">
-        <p class="login-help">Novo aluno? Preencha e-mail e senha e clique em Cadastrar (entra como aluno).</p>
-        <button id="cadastrar" type="button" class="sec">Cadastrar</button>
+<body class="page-login">
+  <div class="login-stage">
+    <aside class="login-brand">
+      <div class="brand-glow"></div>
+      <div class="brand-inner">
+        <p class="brand-kicker">IFMT · Fanfarra</p>
+        <h1 class="brand-title">IFAN</h1>
+        <p class="brand-tag">Sistema de controle da fanfarra</p>
+        <ul class="brand-points">
+          <li>Chamada em tempo real</li>
+          <li>Instrumentos 1–46 organizados</li>
+          <li>Avisos, eventos e problemas</li>
+          <li>Acesso separado: admin e aluno</li>
+        </ul>
       </div>
-    </section>
-  </main>
+    </aside>
+    <main class="login-wrap">
+      <section class="login-card">
+        <h2>Entrar no IFAN</h2>
+        <p class="login-help">Admin gerencia tudo. Aluno vê avisos e eventos e reporta problemas.</p>
+        <form id="loginForm">
+          <label for="email">E-mail</label>
+          <input id="email" type="email" autocomplete="username" required placeholder="seu@email.com">
+          <label for="senha">Senha</label>
+          <input id="senha" type="password" autocomplete="current-password" required placeholder="••••••••">
+          <button id="entrar" type="submit">Entrar</button>
+          <div id="mensagem" class="login-msg" role="alert"></div>
+        </form>
+        <div class="login-cad">
+          <p class="login-help">Novo aluno? Preencha e-mail e senha e cadastre-se (entra como aluno).</p>
+          <button id="cadastrar" type="button" class="sec">Cadastrar</button>
+        </div>
+      </section>
+    </main>
+  </div>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
